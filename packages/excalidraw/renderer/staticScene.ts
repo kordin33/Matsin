@@ -30,6 +30,7 @@ import {
 } from "../components/hyperlink/helpers";
 
 import { bootstrapCanvas, getNormalizedCanvasDimensions } from "./helpers";
+import { renderInfiniteGrid, GridStyle, getAdaptiveGridSize } from "./infiniteGrid";
 
 import type {
   StaticCanvasRenderConfig,
@@ -240,22 +241,30 @@ const _renderStaticScene = ({
     viewBackgroundColor: appState.viewBackgroundColor,
   });
 
-  // Apply zoom
-  context.scale(appState.zoom.value, appState.zoom.value);
-
-  // Grid
-  if (renderGrid) {
-    strokeGrid(
+  // Najpierw rysujemy siatkę na nieskalowanym kontekście, przekazując zoom/scroll,
+  // aby siatka była zakotwiczona w world space (jak w Idroo)
+  if (renderGrid && appState.gridModeEnabled) {
+    renderInfiniteGrid(
       context,
-      appState.gridSize,
-      appState.gridStep,
       appState.scrollX,
       appState.scrollY,
       appState.zoom,
-      normalizedWidth / appState.zoom.value,
-      normalizedHeight / appState.zoom.value,
+      normalizedWidth,
+      normalizedHeight,
+      {
+        style: GridStyle.LINES,
+        size: appState.gridSize,
+        color: appState.theme === "dark" ? "#404040" : "#4a4a4a",
+        opacity: 0.6,
+        majorGridMultiplier: Math.max(1, appState.gridStep),
+        majorGridColor: appState.theme === "dark" ? "#606060" : "#6a6a6a",
+        majorGridOpacity: 0.8,
+      }
     );
   }
+
+  // Dopiero potem skalujemy kontekst do rysowania elementów sceny
+  context.scale(appState.zoom.value, appState.zoom.value);
 
   const groupsToBeAddedToFrame = new Set<string>();
 

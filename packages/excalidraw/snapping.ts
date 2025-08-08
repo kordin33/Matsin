@@ -169,13 +169,8 @@ export const isSnappingEnabled = ({
   selectedElements: NonDeletedExcalidrawElement[];
 }) => {
   if (event) {
-    return (
-      app.state.activeTool.type !== "lasso" &&
-      ((app.state.objectsSnapModeEnabled && !event[KEYS.CTRL_OR_CMD]) ||
-        (!app.state.objectsSnapModeEnabled &&
-          event[KEYS.CTRL_OR_CMD] &&
-          !isGridModeEnabled(app)))
-    );
+    // Odwrócona logika: snap TYLKO gdy przytrzymany Ctrl (dla grid i obiektów)
+    return app.state.activeTool.type !== "lasso" && event[KEYS.CTRL_OR_CMD];
   }
 
   // do not suggest snaps for an arrow to give way to binding

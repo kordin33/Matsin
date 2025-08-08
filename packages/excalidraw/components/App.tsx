@@ -657,7 +657,7 @@ class App extends React.Component<AppProps, AppState> {
       excalidrawAPI,
       viewModeEnabled = false,
       zenModeEnabled = false,
-      gridModeEnabled = false,
+      gridModeEnabled,
       objectsSnapModeEnabled = false,
       theme = defaultAppState.theme,
       name = `${t("labels.untitled")}-${getDateTime()}`,
@@ -6922,8 +6922,8 @@ class App extends React.Component<AppProps, AppState> {
           origin.x,
           origin.y,
           event[KEYS.CTRL_OR_CMD] || isElbowArrowOnly
-            ? null
-            : this.getEffectiveGridSize(),
+            ? this.getEffectiveGridSize()
+            : null,
         ),
       ),
       scrollbars: isOverScrollBars(
@@ -7754,7 +7754,7 @@ class App extends React.Component<AppProps, AppState> {
       const [gridX, gridY] = getGridPoint(
         pointerDownState.origin.x,
         pointerDownState.origin.y,
-        event[KEYS.CTRL_OR_CMD] ? null : this.getEffectiveGridSize(),
+        event[KEYS.CTRL_OR_CMD] ? this.getEffectiveGridSize() : null,
       );
 
       const topLayerFrame = this.getTopLayerFrameAtSceneCoords({
@@ -7879,8 +7879,8 @@ class App extends React.Component<AppProps, AppState> {
       pointerDownState.origin.x,
       pointerDownState.origin.y,
       this.lastPointerDownEvent?.[KEYS.CTRL_OR_CMD]
-        ? null
-        : this.getEffectiveGridSize(),
+        ? this.getEffectiveGridSize()
+        : null,
     );
 
     const topLayerFrame = this.getTopLayerFrameAtSceneCoords({
@@ -7937,8 +7937,8 @@ class App extends React.Component<AppProps, AppState> {
       pointerDownState.origin.x,
       pointerDownState.origin.y,
       this.lastPointerDownEvent?.[KEYS.CTRL_OR_CMD]
-        ? null
-        : this.getEffectiveGridSize(),
+        ? this.getEffectiveGridSize()
+        : null,
     );
 
     const constructorOpts = {
@@ -8057,7 +8057,7 @@ class App extends React.Component<AppProps, AppState> {
         const [gridX, gridY] = getGridPoint(
           pointerCoords.x,
           pointerCoords.y,
-          event[KEYS.CTRL_OR_CMD] ? null : this.getEffectiveGridSize(),
+          event[KEYS.CTRL_OR_CMD] ? this.getEffectiveGridSize() : null,
         );
 
         let index =
@@ -8139,7 +8139,7 @@ class App extends React.Component<AppProps, AppState> {
       const [gridX, gridY] = getGridPoint(
         pointerCoords.x,
         pointerCoords.y,
-        event[KEYS.CTRL_OR_CMD] ? null : this.getEffectiveGridSize(),
+        event[KEYS.CTRL_OR_CMD] ? this.getEffectiveGridSize() : null,
       );
 
       // for arrows/lines, don't start dragging until a given threshold
@@ -10536,7 +10536,7 @@ class App extends React.Component<AppProps, AppState> {
     let [gridX, gridY] = getGridPoint(
       pointerCoords.x,
       pointerCoords.y,
-      event[KEYS.CTRL_OR_CMD] ? null : this.getEffectiveGridSize(),
+      event[KEYS.CTRL_OR_CMD] ? this.getEffectiveGridSize() : null,
     );
 
     const image =
@@ -10627,7 +10627,7 @@ class App extends React.Component<AppProps, AppState> {
     const [x, y] = getGridPoint(
       pointerCoords.x - pointerDownState.resize.offset.x,
       pointerCoords.y - pointerDownState.resize.offset.y,
-      event[KEYS.CTRL_OR_CMD] ? null : this.getEffectiveGridSize(),
+      event[KEYS.CTRL_OR_CMD] ? this.getEffectiveGridSize() : null,
     );
 
     const croppingElement = this.scene
