@@ -123,6 +123,7 @@ import {
 } from "./data/LocalData";
 import { isBrowserStorageStateNewer } from "./data/tabSync";
 import { ShareDialog, shareDialogStateAtom } from "./share/ShareDialog";
+import { StudentLinkDialog, studentLinkDialogStateAtom } from "./components/StudentLinkDialog";
 import CollabError, { collabErrorIndicatorAtom } from "./collab/CollabError";
 import { useHandleAppTheme } from "./useHandleAppTheme";
 import { getPreferredLanguage } from "./app-language/language-detector";
@@ -291,6 +292,14 @@ const initializeScene = async (opts: {
   if (roomLinkData && opts.collabAPI) {
     const { excalidrawAPI } = opts;
 
+    // Check if this is a student link with predefined username
+    const searchParams = new URLSearchParams(window.location.search);
+    const studentName = searchParams.get("student");
+    if (studentName) {
+      // Set the student name as username before starting collaboration
+      opts.collabAPI.setUsername(decodeURIComponent(studentName));
+    }
+
     const scene = await opts.collabAPI.startCollaboration(roomLinkData);
 
     return {
@@ -368,6 +377,7 @@ const ExcalidrawWrapper = () => {
 
   const [, setShareDialogState] = useAtom(shareDialogStateAtom);
   const [collabAPI] = useAtom(collabAPIAtom);
+  const [studentDialogState, setStudentDialogState] = useAtom(studentLinkDialogStateAtom);
   const [isCollaborating] = useAtomWithInitialValue(isCollaboratingAtom, () => {
     return isCollaborationLink(window.location.href);
   });
@@ -872,13 +882,19 @@ const ExcalidrawWrapper = () => {
         }}
       >
         <AppMainMenu
-          onCollabDialogOpen={onCollabDialogOpen}
+          onCollabDialogOpen={() => setShareDialogState({ isOpen: true, type: "collaborationOnly" })}
           isCollaborating={isCollaborating}
           isCollabEnabled={!isCollabDisabled}
           theme={appTheme}
-          setTheme={(theme) => setAppTheme(theme)}
+          setTheme={setAppTheme}
           refresh={() => forceRefresh((prev) => !prev)}
         />
+        {studentDialogState.isOpen && (
+          <StudentLinkDialog
+            collabAPI={collabAPI}
+            handleClose={() => setStudentDialogState({ isOpen: false })}
+          />
+        )}
         <AppWelcomeScreen
           onCollabDialogOpen={onCollabDialogOpen}
           isCollabEnabled={!isCollabDisabled}

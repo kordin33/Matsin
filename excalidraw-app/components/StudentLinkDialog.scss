@@ -1,0 +1,65 @@
+.StudentLinkDialog {
+  padding: 16px;
+  min-width: 560px;
+}
+
+.StudentLinkDialog__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+
+.StudentLinkDialog__create {
+  background: var(--island-bg-color);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.StudentLinkDialog__create__form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.StudentLinkDialog__list {
+  background: var(--island-bg-color);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.StudentLinkDialog__students {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.StudentLinkDialog__student {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--button-bg-color);
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.StudentLinkDialog__student__info {
+  display: flex;
+  flex-direction: column;
+}
+
+.StudentLinkDialog__student__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.StudentLinkDialog__empty {
+  opacity: 0.8;
+}
+
+.StudentLinkDialog__footer {
+  margin-top: 12px;
+  font-size: 12px;
+  opacity: 0.9;
+}

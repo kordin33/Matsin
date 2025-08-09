@@ -2,6 +2,7 @@ import {
   loginIcon,
   ExcalLogo,
   eyeIcon,
+  usersIcon,
 } from "@excalidraw/excalidraw/components/icons";
 import { MainMenu } from "@excalidraw/excalidraw/index";
 import React from "react";
@@ -14,6 +15,8 @@ import { LanguageList } from "../app-language/LanguageList";
 import { isMatsinPlusSignedUser } from "../app_constants";
 
 import { saveDebugState } from "./DebugCanvas";
+import { studentLinkDialogStateAtom } from "./StudentLinkDialog";
+import { useAtom } from "../app-jotai";
 
 export const AppMainMenu: React.FC<{
   onCollabDialogOpen: () => any;
@@ -23,6 +26,7 @@ export const AppMainMenu: React.FC<{
   setTheme: (theme: Theme | "system") => void;
   refresh: () => void;
 }> = React.memo((props) => {
+  const [, setStudentDialog] = useAtom(studentLinkDialogStateAtom);
   return (
     <MainMenu>
       <MainMenu.DefaultItems.LoadScene />
@@ -35,6 +39,12 @@ export const AppMainMenu: React.FC<{
           onSelect={() => props.onCollabDialogOpen()}
         />
       )}
+      <MainMenu.Item
+        icon={usersIcon}
+        onClick={() => setStudentDialog({ isOpen: true })}
+      >
+        Uczniowie (stałe linki)
+      </MainMenu.Item>
       <MainMenu.DefaultItems.CommandPalette className="highlighted" />
       <MainMenu.DefaultItems.SearchMenu />
       <MainMenu.DefaultItems.Help />
@@ -67,7 +77,7 @@ export const AppMainMenu: React.FC<{
               delete window.visualDebug;
               saveDebugState({ enabled: false });
             } else {
-              window.visualDebug = { data: [] };
+              window.visualDebug = { data: [] } as any;
               saveDebugState({ enabled: true });
             }
             props?.refresh();
