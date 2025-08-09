@@ -246,19 +246,18 @@ const _renderStaticScene = ({
   if (renderGrid && appState.gridModeEnabled) {
     renderInfiniteGrid(
       context,
-      appState.scrollX,
-      appState.scrollY,
-      appState.zoom,
       normalizedWidth,
       normalizedHeight,
       {
+        scrollX: appState.scrollX,
+        scrollY: appState.scrollY,
+        zoom: appState.zoom,
         style: GridStyle.LINES,
         size: appState.gridSize,
         color: appState.theme === "dark" ? "#404040" : "#4a4a4a",
         opacity: 0.6,
         majorGridMultiplier: Math.max(1, appState.gridStep),
-        majorGridColor: appState.theme === "dark" ? "#606060" : "#6a6a6a",
-        majorGridOpacity: 0.8,
+        majorColor: appState.theme === "dark" ? "#606060" : "#6a6a6a",
       }
     );
   }
