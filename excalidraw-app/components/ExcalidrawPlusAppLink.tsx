@@ -1,7 +1,7 @@
-import { isExcalidrawPlusSignedUser } from "../app_constants";
+import { isMatsinPlusSignedUser } from "../app_constants";
 
 export const ExcalidrawPlusAppLink = () => {
-  if (!isExcalidrawPlusSignedUser) {
+  if (!isMatsinPlusSignedUser) {
     return null;
   }
   return (

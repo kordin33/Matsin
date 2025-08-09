@@ -84,7 +84,7 @@ import {
 } from "./app-jotai";
 import {
   FIREBASE_STORAGE_PREFIXES,
-  isExcalidrawPlusSignedUser,
+  isMatsinPlusSignedUser,
   STORAGE_KEYS,
   SYNC_BROWSER_TABS_TIMEOUT,
 } from "./app_constants";
@@ -1084,7 +1084,7 @@ const ExcalidrawWrapper = () => {
                 );
               },
             },
-            ...(isExcalidrawPlusSignedUser
+            ...(isMatsinPlusSignedUser
               ? [
                   {
                     ...ExcalidrawPlusAppCommand,
