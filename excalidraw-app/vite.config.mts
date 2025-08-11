@@ -118,7 +118,7 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [
       Sitemap({
-        hostname: "https://excalidraw.com",
+        hostname: "https://matsin.com",
         outDir: "build",
         changefreq: "monthly",
         // its static in public folder
@@ -205,34 +205,34 @@ export default defineConfig(({ mode }) => {
           ],
         },
         manifest: {
-          short_name: "Excalidraw",
-          name: "Excalidraw",
+          short_name: "Matsin",
+          name: "Matsin",
           description:
-            "Excalidraw is a whiteboard tool that lets you easily sketch diagrams that have a hand-drawn feel to them.",
+            "Matsin is a collaborative whiteboard tool that lets you easily sketch diagrams that have a hand-drawn feel to them.",
           icons: [
             {
-              src: "android-chrome-192x192.png",
+              src: "android-chrome-192x192.svg",
               sizes: "192x192",
-              type: "image/png",
+              type: "image/svg+xml",
             },
             {
-              src: "apple-touch-icon.png",
-              type: "image/png",
+              src: "apple-touch-icon.svg",
+              type: "image/svg+xml",
               sizes: "180x180",
             },
             {
-              src: "favicon-32x32.png",
+              src: "favicon-32x32.svg",
               sizes: "32x32",
-              type: "image/png",
+              type: "image/svg+xml",
             },
             {
-              src: "favicon-16x16.png",
+              src: "favicon-16x16.svg",
               sizes: "16x16",
-              type: "image/png",
+              type: "image/svg+xml",
             },
           ],
           start_url: "/",
-          id: "excalidraw",
+          id: "matsin",
           display: "standalone",
           theme_color: "#121212",
           background_color: "#ffffff",
