@@ -4,7 +4,7 @@ import { atom, useAtom } from "../app-jotai";
 
 import { getPreferredLanguage, languageDetector } from "./language-detector";
 
-export const appLangCodeAtom = atom(getPreferredLanguage());
+export const appLangCodeAtom = atom("pl");
 
 export const useAppLangCode = () => {
   const [langCode, setLangCode] = useAtom(appLangCodeAtom);

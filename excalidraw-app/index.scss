@@ -33,10 +33,42 @@
     }
   }
 
+  /* Liquid Glass Effect for Dropdown Menu - Highest specificity */
+  .excalidraw .dropdown-menu .dropdown-menu-container,
+  .excalidraw .dropdown-menu-container,
+  .dropdown-menu .dropdown-menu-container,
   .dropdown-menu-container {
+    background: linear-gradient(135deg, 
+      rgba(255, 255, 255, 0.15) 0%, 
+      rgba(255, 255, 255, 0.05) 100%) !important;
+    backdrop-filter: blur(25px) saturate(200%) !important;
+    -webkit-backdrop-filter: blur(25px) saturate(200%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    box-shadow: 
+      0 8px 32px rgba(0, 0, 0, 0.12),
+      0 2px 8px rgba(0, 0, 0, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+    border-radius: 16px !important;
+    position: static !important; /* Prevent position interference */
+    
+    /* Add subtle inner glow */
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.1) 0%, 
+        transparent 50%);
+      border-radius: 16px;
+      pointer-events: none;
+    }
+    
     .dropdown-menu-item {
       &.active-collab {
-        background-color: #ecfdf5;
+        background-color: rgba(236, 253, 245, 0.8);
         color: #064e3c;
       }
       &.highlighted {
@@ -46,6 +78,44 @@
           stroke-width: 2;
         }
       }
+    }
+  }
+  
+  /* Liquid Glass Effect ONLY for dropdown menu Island components */
+  .excalidraw .dropdown-menu .Island,
+  .dropdown-menu .Island {
+    background: linear-gradient(135deg, 
+      rgba(255, 255, 255, 0.15) 0%, 
+      rgba(255, 255, 255, 0.05) 100%) !important;
+    backdrop-filter: blur(25px) saturate(200%) !important;
+    -webkit-backdrop-filter: blur(25px) saturate(200%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    box-shadow: 
+      0 8px 32px rgba(0, 0, 0, 0.12),
+      0 2px 8px rgba(0, 0, 0, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+    border-radius: 16px !important;
+    
+    /* Add subtle inner glow */
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.1) 0%, 
+        transparent 50%);
+      border-radius: 16px;
+      pointer-events: none;
+      z-index: 1;
+    }
+    
+    /* Ensure content is above the glow */
+    > * {
+      position: relative;
+      z-index: 2;
     }
   }
 

@@ -29,9 +29,7 @@ export const AppMainMenu: React.FC<{
   const [, setStudentDialog] = useAtom(studentLinkDialogStateAtom);
   return (
     <MainMenu>
-      <MainMenu.DefaultItems.LoadScene />
-      <MainMenu.DefaultItems.SaveToActiveFile />
-      <MainMenu.DefaultItems.Export />
+
       <MainMenu.DefaultItems.SaveAsImage />
       {props.isCollabEnabled && (
         <MainMenu.DefaultItems.LiveCollaborationTrigger
@@ -45,30 +43,12 @@ export const AppMainMenu: React.FC<{
       >
         Uczniowie (stałe linki)
       </MainMenu.Item>
-      <MainMenu.DefaultItems.CommandPalette className="highlighted" />
-      <MainMenu.DefaultItems.SearchMenu />
-      <MainMenu.DefaultItems.Help />
+
       <MainMenu.DefaultItems.ClearCanvas />
       <MainMenu.Separator />
-      <MainMenu.ItemLink
-        icon={ExcalLogo}
-        href={`${
-          import.meta.env.VITE_APP_PLUS_LP
-        }/plus?utm_source=excalidraw&utm_medium=app&utm_content=hamburger`}
-        className=""
-      >
-        Excalidraw+
-      </MainMenu.ItemLink>
-      <MainMenu.DefaultItems.Socials />
-      <MainMenu.ItemLink
-        icon={loginIcon}
-        href={`${import.meta.env.VITE_APP_PLUS_APP}${
-          isMatsinPlusSignedUser ? "" : "/sign-up"
-        }?utm_source=signin&utm_medium=app&utm_content=hamburger`}
-        className="highlighted"
-      >
-        {isMatsinPlusSignedUser ? "Sign in" : "Sign up"}
-      </MainMenu.ItemLink>
+
+
+
       {isDevEnv() && (
         <MainMenu.Item
           icon={eyeIcon}
@@ -92,9 +72,7 @@ export const AppMainMenu: React.FC<{
         theme={props.theme}
         onSelect={props.setTheme}
       />
-      <MainMenu.ItemCustom>
-        <LanguageList style={{ width: "100%" }} />
-      </MainMenu.ItemCustom>
+
       <MainMenu.DefaultItems.ChangeCanvasBackground />
     </MainMenu>
   );

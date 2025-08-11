@@ -1,0 +1,132 @@
+.calculator-modal {
+  .Dialog {
+    width: 320px;
+  }
+}
+
+.calculator {
+  background: var(--color-surface-lowest);
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.calculator-display {
+  background: var(--color-surface-low);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 16px;
+  margin-bottom: 16px;
+  text-align: right;
+}
+
+.calculator-display-value {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--color-text);
+  min-height: 32px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.calculator-keypad {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.calculator-row {
+  display: flex;
+  gap: 8px;
+}
+
+.calculator-key {
+  flex: 1;
+  height: 48px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-surface-low);
+  color: var(--color-text);
+  font-size: 18px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  &:hover {
+    background: var(--color-surface-high);
+    border-color: var(--color-primary);
+  }
+  
+  &:active {
+    transform: scale(0.95);
+    background: var(--color-surface-highest);
+  }
+  
+  &:focus {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+}
+
+.calculator-key-function {
+  background: var(--color-warning-surface);
+  color: var(--color-warning-text);
+  
+  &:hover {
+    background: var(--color-warning-surface-hover);
+  }
+}
+
+.calculator-key-operator {
+  background: var(--color-primary-surface);
+  color: var(--color-primary-text);
+  
+  &:hover {
+    background: var(--color-primary-surface-hover);
+  }
+}
+
+.calculator-key-equals {
+  background: var(--color-success-surface);
+  color: var(--color-success-text);
+  
+  &:hover {
+    background: var(--color-success-surface-hover);
+  }
+}
+
+.calculator-key-zero {
+  flex: 2;
+}
+
+@media (max-width: 640px) {
+  .calculator-modal .Dialog {
+    width: 280px;
+  }
+  
+  .calculator {
+    padding: 12px;
+  }
+  
+  .calculator-display {
+    padding: 12px;
+  }
+  
+  .calculator-display-value {
+    font-size: 20px;
+  }
+  
+  .calculator-key {
+    height: 44px;
+    font-size: 16px;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .calculator {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+}

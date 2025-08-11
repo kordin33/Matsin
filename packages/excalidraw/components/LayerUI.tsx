@@ -43,7 +43,7 @@ import MainMenu from "./main-menu/MainMenu";
 import { ActiveConfirmDialog } from "./ActiveConfirmDialog";
 import { useDevice } from "./App";
 import { OverwriteConfirmDialog } from "./OverwriteConfirm/OverwriteConfirm";
-import { LibraryIcon } from "./icons";
+
 import { DefaultSidebar } from "./DefaultSidebar";
 import { TTDDialog } from "./TTDDialog/TTDDialog";
 import { Stats } from "./Stats";
@@ -52,6 +52,8 @@ import { ErrorDialog } from "./ErrorDialog";
 import { EyeDropper, activeEyeDropperAtom } from "./EyeDropper";
 import { FixedSideContainer } from "./FixedSideContainer";
 import { HandButton } from "./HandButton";
+import { CalculatorButton } from "./CalculatorButton";
+import { CalculatorModal } from "./CalculatorModal";
 import { HelpDialog } from "./HelpDialog";
 import { HintViewer } from "./HintViewer";
 import { ImageExportDialog } from "./ImageExportDialog";
@@ -305,6 +307,8 @@ const LayerUI = ({
                               isMobile
                             />
 
+                            <CalculatorButton />
+
                             <ShapesSwitcher
                               appState={appState}
                               activeTool={appState.activeTool}
@@ -403,23 +407,7 @@ const LayerUI = ({
           tunneled away. We only render tunneled components that actually
         have defaults when host do not render anything. */}
       <DefaultMainMenu UIOptions={UIOptions} />
-      <DefaultSidebar.Trigger
-        __fallback
-        icon={LibraryIcon}
-        title={capitalizeString(t("toolBar.library"))}
-        onToggle={(open) => {
-          if (open) {
-            trackEvent(
-              "sidebar",
-              `${DEFAULT_SIDEBAR.name} (open)`,
-              `button (${device.editor.isMobile ? "mobile" : "desktop"})`,
-            );
-          }
-        }}
-        tab={DEFAULT_SIDEBAR.defaultTab}
-      >
-        {t("toolBar.library")}
-      </DefaultSidebar.Trigger>
+
       <DefaultOverwriteConfirmDialog />
       {appState.openDialog?.name === "ttd" && <TTDDialog __fallback />}
       {/* ------------------------------------------------------------------ */}
@@ -482,6 +470,15 @@ const LayerUI = ({
         />
       )}
       <ActiveConfirmDialog />
+      {appState.openDialog?.name === "calculator" && (
+        <CalculatorModal
+          onClose={() => {
+            setAppState({
+              openDialog: null,
+            });
+          }}
+        />
+      )}
       {appState.openDialog?.name === "elementLinkSelector" && (
         <ElementLinkDialog
           sourceElementId={appState.openDialog.sourceElementId}

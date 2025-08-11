@@ -135,8 +135,11 @@ import DebugCanvas, {
 } from "./components/DebugCanvas";
 import { AIComponents } from "./components/AI";
 import { ExcalidrawPlusIframeExport } from "./ExcalidrawPlusIframeExport";
+import CalculatorModal from "./components/CalculatorModal";
 
 import "./index.scss";
+import "./minimal-theme-wrapper.scss";
+import "./components/toglobal.css";
 
 import type { CollabAPI } from "./collab/Collab";
 
@@ -345,6 +348,7 @@ const initializeScene = async (opts: {
 
 const ExcalidrawWrapper = () => {
   const [errorMessage, setErrorMessage] = useState("");
+  const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const isCollabDisabled = isRunningInIframe();
 
   const { editorTheme, appTheme, setAppTheme } = useHandleAppTheme();
@@ -810,7 +814,7 @@ const ExcalidrawWrapper = () => {
   return (
     <div
       style={{ height: "100%" }}
-      className={clsx("excalidraw-app", {
+      className={clsx("excalidraw-app", "excalidraw-minimal-wrapper", {
         "is-collaborating": isCollaborating,
       })}
     >
@@ -964,6 +968,22 @@ const ExcalidrawWrapper = () => {
 
         <CommandPalette
           customCommandPaletteItems={[
+            {
+              label: "Calculator",
+              category: DEFAULT_CATEGORIES.app,
+              keywords: [
+                "calculator",
+                "calc",
+                "math",
+                "compute",
+                "numbers",
+                "scientific",
+              ],
+              icon: <span style={{ fontSize: "14px" }}>🧮</span>,
+              perform: () => {
+                setIsCalculatorOpen(true);
+              },
+            },
             {
               label: t("labels.liveCollaboration"),
               category: DEFAULT_CATEGORIES.app,
@@ -1156,6 +1176,12 @@ const ExcalidrawWrapper = () => {
             appState={excalidrawAPI.getAppState()}
             scale={window.devicePixelRatio}
             ref={debugCanvasRef}
+          />
+        )}
+        {isCalculatorOpen && (
+          <CalculatorModal
+            visible={isCalculatorOpen}
+            onUpdateVisible={setIsCalculatorOpen}
           />
         )}
       </Excalidraw>

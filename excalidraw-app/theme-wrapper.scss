@@ -1,0 +1,153 @@
+.excalidraw-minimal-wrapper{
+  background:
+    radial-gradient(1200px 700px at 12% -10%, rgba(255,255,255,0.35), transparent 60%),
+    radial-gradient(900px 600px at 100% 0%, rgba(16,185,129,0.06), transparent 55%),
+    linear-gradient(135deg, #f8fffB 0%, #eefdf6 100%) !important;
+  border: 1px solid rgba(255,255,255,0.28) !important;
+  outline: none;
+  border-radius: 18px !important;
+  box-shadow:
+    0 20px 60px rgba(0,0,0,0.12),
+    0 4px 16px rgba(0,0,0,0.06);
+  margin: 8px !important;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* tokeny szkła */
+.excalidraw-minimal-wrapper .excalidraw{
+  --color-primary:#10b981;
+  --color-primary-darker:#059669;
+  --color-primary-darkest:#047857;
+
+  --glass-bg: rgba(255,255,255,0.10);       /* słabsze krycie -> więcej przezroczystości */
+  --glass-bg-strong: rgba(255,255,255,0.14);
+  --glass-tint: rgba(16,185,129,0.08);
+  --glass-border: rgba(255,255,255,0.40);
+  --glass-inner: rgba(0,0,0,0.14);
+  --glass-shadow: 0 18px 48px rgba(0,0,0,0.18), 0 4px 14px rgba(0,0,0,0.10);
+  --glass-blur: 28px;                        /* mocniejszy blur */
+  --glass-saturate: 160%;
+  --glass-radius: 14px;
+
+  --text-primary-color:#0f172a;
+  --popup-text-color:#111827;
+  --default-border-color:rgba(0,0,0,0.10);
+}
+
+.excalidraw-minimal-wrapper .lg-panel{
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.26), rgba(255,255,255,0.08)),
+    radial-gradient(120% 100% at 0% 0%, var(--glass-tint), transparent 60%),
+    var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
+  -webkit-backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
+  position: relative; overflow: clip;
+}
+.excalidraw-minimal-wrapper .lg-panel::before{
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background:
+    radial-gradient(900px 300px at 8% -12%, rgba(255,255,255,0.70), transparent 60%),
+    linear-gradient(to bottom, rgba(255,255,255,0.12), transparent 30%);
+  mix-blend-mode:screen;
+}
+.excalidraw-minimal-wrapper .lg-panel::after{
+  content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+  box-shadow: inset 0 1px 0 var(--glass-border), inset 0 -1px 0 var(--glass-inner);
+}
+
+/* toolbar (pastylka) */
+.excalidraw-minimal-wrapper .excalidraw .App-toolbar{
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.30), rgba(255,255,255,0.10)),
+    var(--glass-bg) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 999px !important;
+  box-shadow: var(--glass-shadow) !important;
+  backdrop-filter: saturate(170%) blur(30px);
+  -webkit-backdrop-filter: saturate(170%) blur(30px);
+  padding:.6rem .8rem;
+}
+
+/* przyciski */
+.excalidraw-minimal-wrapper .excalidraw .ToolIcon__icon{
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.32), rgba(255,255,255,0.10)),
+    var(--glass-bg);
+  border:1px solid rgba(255,255,255,0.38);
+  border-radius:12px;
+  color:var(--color-primary);
+  box-shadow:0 1px 2px rgba(0,0,0,0.06);
+  transition:transform .18s ease, box-shadow .18s ease, background .18s ease, border-color .18s ease;
+  backdrop-filter: saturate(150%) blur(14px);
+}
+.excalidraw-minimal-wrapper .excalidraw .ToolIcon__icon:hover{
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.46), rgba(255,255,255,0.14)),
+    var(--glass-bg);
+  border-color: var(--color-primary);
+  color:#065f46;
+  transform:translateY(-1px);
+  box-shadow:0 10px 24px rgba(16,185,129,0.22);
+}
+.excalidraw-minimal-wrapper .excalidraw .ToolIcon__icon[aria-pressed="true"]{
+  background:
+    linear-gradient(180deg, rgba(16,185,129,0.18), rgba(16,185,129,0.05)),
+    var(--glass-bg-strong);
+  border-color: var(--color-primary-darker);
+  color:#fff; text-shadow:0 1px 0 rgba(0,0,0,0.25);
+}
+
+/* dropdowny / modal */
+.excalidraw-minimal-wrapper .excalidraw .dropdown-menu,
+.excalidraw-minimal-wrapper .excalidraw .Modal__content{
+  composes: lg-panel;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.26), rgba(255,255,255,0.12)),
+    var(--glass-bg);
+  border:1px solid var(--glass-border);
+  border-radius:14px; box-shadow: var(--glass-shadow);
+}
+
+/* inputy */
+.excalidraw-minimal-wrapper .excalidraw input[type="text"],
+.excalidraw-minimal-wrapper .excalidraw input[type="number"],
+.excalidraw-minimal-wrapper .excalidraw textarea{
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.34), rgba(255,255,255,0.14)),
+    var(--glass-bg);
+  border:1px solid rgba(255,255,255,0.42);
+  border-radius:10px; color:var(--text-primary-color);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -1px 0 rgba(0,0,0,0.06);
+  backdrop-filter:saturate(150%) blur(18px);
+}
+.excalidraw-minimal-wrapper .excalidraw input:focus,
+.excalidraw-minimal-wrapper .excalidraw textarea:focus{
+  border-color:var(--color-primary);
+  box-shadow:0 0 0 3px rgba(16,185,129,0.22);
+  outline:none;
+}
+
+/* dark mode szkło */
+.excalidraw-minimal-wrapper .excalidraw.theme--dark{
+  --text-primary-color:#e5e7eb; --popup-text-color:#f3f4f6;
+  --glass-bg: rgba(14,14,16,0.36);
+  --glass-bg-strong: rgba(14,14,16,0.46);
+  --glass-tint: rgba(16,185,129,0.12);
+  --glass-border: rgba(255,255,255,0.18);
+  --glass-inner: rgba(0,0,0,0.55);
+  --glass-shadow: 0 24px 60px rgba(0,0,0,0.55), 0 4px 16px rgba(0,0,0,0.35);
+}
+
+/* fallback bez backdrop-filter */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))){
+  .excalidraw-minimal-wrapper .lg-panel,
+  .excalidraw-minimal-wrapper .excalidraw .App-toolbar,
+  .excalidraw-minimal-wrapper .excalidraw .dropdown-menu,
+  .excalidraw-minimal-wrapper .excalidraw .Modal__content{
+    background: rgba(255,255,255,0.92) !important;
+    box-shadow: 0 12px 28px rgba(0,0,0,0.16);
+  }
+}

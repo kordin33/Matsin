@@ -17,7 +17,8 @@
         // background-color: var(--island-bg-color);
         box-shadow: var(--shadow-island);
         border-radius: var(--border-radius-lg);
-        position: relative;
+        // position: relative; // removed to prevent layout shifts on toolbar
+        position: static;
         transition: box-shadow 0.5s ease-in-out;
         display: flex;
         flex-direction: column;
@@ -33,6 +34,7 @@
       max-height: calc(100vh - 150px);
       overflow-y: auto;
       --gap: 2;
+      position: static; // ensure it doesn't participate in offset positioning
     }
 
     .dropdown-menu-item-base {

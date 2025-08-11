@@ -2275,3 +2275,21 @@ export const elementLinkIcon = createIcon(
   </g>,
   tablerIconProps,
 );
+
+export const calculatorIcon = createIcon(
+  <g strokeWidth="1.25">
+    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+    <path d="M4 3a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v16a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-16z" />
+    <path d="M8 7h8" />
+    <path d="M8 11h2" />
+    <path d="M12 11h2" />
+    <path d="M16 11h2" />
+    <path d="M8 15h2" />
+    <path d="M12 15h2" />
+    <path d="M16 15h2" />
+    <path d="M8 19h2" />
+    <path d="M12 19h2" />
+    <path d="M16 19h2" />
+  </g>,
+  tablerIconProps,
+);
