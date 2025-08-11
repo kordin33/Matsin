@@ -19,16 +19,3 @@ VITE_APP_DEBUG = "false"
 [environments.production.services.postgres]
 type = "postgresql"
 version = "15"
-
-# Cache mount configuration
-[[mounts]]
-type = "cache"
-id = "cache-node-modules"
-source = "/app/node_modules"
-target = "/app/node_modules"
-
-[[mounts]]
-type = "cache"
-id = "cache-yarn"
-source = "/usr/local/share/.cache/yarn"
-target = "/usr/local/share/.cache/yarn"

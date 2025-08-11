@@ -1,12 +1,14 @@
 FROM --platform=${BUILDPLATFORM} node:18 AS build
 
+ARG RAILWAY_SERVICE_ID
+
 WORKDIR /opt/node_app
 
 COPY . .
 
 # do not ignore optional dependencies:
 # Error: Cannot find module @rollup/rollup-linux-x64-gnu
-RUN --mount=type=cache,id=yarn-cache,target=/root/.cache/yarn \
+RUN --mount=type=cache,id=s/${RAILWAY_SERVICE_ID}-yarn-cache,target=/root/.cache/yarn \
     npm_config_target_arch=${TARGETARCH} yarn --network-timeout 600000
 
 ARG NODE_ENV=production
