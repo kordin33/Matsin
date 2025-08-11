@@ -22,12 +22,12 @@ version = "15"
 # Cache mount configuration
 [[mounts]]
 type = "cache"
-id = "node_modules_cache"
+id = "cache-node_modules_cache"
 source = "/app/node_modules"
 target = "/app/node_modules"
 
 [[mounts]]
 type = "cache"
-id = "yarn_cache"
+id = "cache-yarn_cache"
 source = "/usr/local/share/.cache/yarn"
 target = "/usr/local/share/.cache/yarn"
