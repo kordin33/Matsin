@@ -17,6 +17,7 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
+    "experimentalDecorators": true,
     "baseUrl": ".",
     "paths": {
       "@excalidraw/common": ["./packages/common/src/index.ts"],
@@ -32,5 +33,5 @@
     }
   },
   "include": ["packages", "excalidraw-app"],
-  "exclude": ["examples", "dist", "types", "tests"]
+  "exclude": ["examples", "dist", "types", "tests", "**/*.test.tsx", "**/*.test.ts", "**/tests/**", "excalidraw-app/*theme-example*", "excalidraw-app/angular-theme-example.component.ts", "excalidraw-app/react-theme-example.jsx", "excalidraw-app/vue-theme-example.vue"]
 }

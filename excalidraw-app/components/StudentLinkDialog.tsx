@@ -167,13 +167,13 @@ export const StudentLinkDialog = ({
                   </div>
                   <div className="StudentLinkDialog__student__actions">
                     <FilledButton
-                      size="small"
+                      size="medium"
                       variant="outlined"
                       label="Dołącz"
                       onClick={() => joinStudent(link.roomId, link.roomKey)}
                     />
                     <FilledButton
-                      size="small"
+                      size="medium"
                       variant="outlined"
                       label="Kopiuj"
                       icon={copyIcon}
@@ -181,7 +181,7 @@ export const StudentLinkDialog = ({
                       onClick={() => copyStudentLink(link.url)}
                     />
                     <FilledButton
-                      size="small"
+                      size="medium"
                       variant="outlined"
                       color="danger"
                       label="Usuń"

@@ -22,6 +22,7 @@ export const CalculatorButton = ({
       type="button"
       icon={calculatorIcon}
       title={title ?? t("buttons.calculator")}
+      aria-label={title ?? t("buttons.calculator")}
       name={name ?? "calculator"}
       id={id}
       size={size}

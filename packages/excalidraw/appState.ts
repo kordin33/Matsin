@@ -66,7 +66,6 @@ export const getDefaultAppState = (): Omit<
     gridSize: DEFAULT_GRID_SIZE,
     gridStep: DEFAULT_GRID_STEP,
     gridModeEnabled: true,
-    gridStyle: "lines" as const,
     isBindingEnabled: true,
     defaultSidebarDockedPreference: false,
     isLoading: false,
@@ -187,7 +186,6 @@ const APP_STATE_STORAGE_CONF = (<
   gridSize: { browser: true, export: true, server: true },
   gridStep: { browser: true, export: true, server: true },
   gridModeEnabled: { browser: true, export: true, server: true },
-  gridStyle: { browser: true, export: true, server: true },
   height: { browser: false, export: false, server: false },
   isBindingEnabled: { browser: false, export: false, server: false },
   defaultSidebarDockedPreference: {
@@ -262,7 +260,7 @@ const _clearAppStateForStorage = <
       ? K
       : never;
   }[keyof typeof APP_STATE_STORAGE_CONF];
-  const stateForExport = {} as { [K in ExportableKeys]?: typeof appState[K] };
+  const stateForExport = {} as { [K in ExportableKeys]?: AppState[K] };
   for (const key of Object.keys(appState) as (keyof typeof appState)[]) {
     const propConfig = APP_STATE_STORAGE_CONF[key];
     if (propConfig?.[exportType]) {
