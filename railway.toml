@@ -1,6 +1,6 @@
 [build]
 builder = "dockerfile"
-dockerfilePath = "excalidraw/Dockerfile"
+dockerfilePath = "Dockerfile"
 
 [deploy]
 startCommand = "nginx -g 'daemon off;'"
