@@ -1,6 +1,7 @@
 [build]
 builder = "dockerfile"
 dockerfilePath = "Dockerfile"
+buildCommand = "yarn build:app:docker"
 
 [deploy]
 startCommand = "nginx -g 'daemon off;'"
