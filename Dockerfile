@@ -15,7 +15,7 @@ RUN npm_config_target_arch=${TARGETARCH} yarn build:app:docker
 FROM --platform=${TARGETPLATFORM} nginx:1.27-alpine
 
 COPY --from=build /opt/node_app/excalidraw-app/build /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /opt/node_app/nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 
