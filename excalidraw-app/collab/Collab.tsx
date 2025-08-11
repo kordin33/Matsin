@@ -79,6 +79,11 @@ import {
   saveToFirebase,
 } from "../data/firebase";
 import {
+  isSavedToPostgreSQL,
+  loadFromPostgreSQL,
+  saveToPostgreSQL,
+} from "../data/postgresql";
+import {
   importUsernameFromLocalStorage,
   saveUsernameToLocalStorage,
 } from "../data/localStorage";
@@ -296,7 +301,7 @@ class Collab extends PureComponent<CollabProps, CollabState> {
     ) {
       // this won't run in time if user decides to leave the site, but
       //  the purpose is to run in immediately after user decides to stay
-      this.saveCollabRoomToFirebase(syncableElements);
+      this.saveCollabRoomToDatabase(syncableElements);
 
       if (import.meta.env.VITE_APP_DISABLE_PREVENT_UNLOAD !== "true") {
         preventUnload(event);
@@ -308,15 +313,24 @@ class Collab extends PureComponent<CollabProps, CollabState> {
     }
   });
 
-  saveCollabRoomToFirebase = async (
+  saveCollabRoomToDatabase = async (
     syncableElements: readonly SyncableExcalidrawElement[],
   ) => {
     try {
-      const storedElements = await saveToFirebase(
-        this.portal,
-        syncableElements,
-        this.excalidrawAPI.getAppState(),
-      );
+      // Use PostgreSQL for persistent rooms, Firebase for temporary collaboration
+      const isPersistentRoom = import.meta.env.VITE_APP_PERSISTENT_ROOMS === 'true';
+      
+      const storedElements = isPersistentRoom 
+        ? await saveToPostgreSQL(
+            this.portal,
+            syncableElements,
+            this.excalidrawAPI.getAppState(),
+          )
+        : await saveToFirebase(
+            this.portal,
+            syncableElements,
+            this.excalidrawAPI.getAppState(),
+          );
 
       this.resetErrorIndicator();
 
@@ -351,11 +365,11 @@ class Collab extends PureComponent<CollabProps, CollabState> {
 
   stopCollaboration = (keepRemoteState = true) => {
     this.queueBroadcastAllElements.cancel();
-    this.queueSaveToFirebase.cancel();
+    this.queueSaveToDatabase.cancel();
     this.loadImageFiles.cancel();
     this.resetErrorIndicator(true);
 
-    this.saveCollabRoomToFirebase(
+    this.saveCollabRoomToDatabase(
       getSyncableElements(
         this.excalidrawAPI.getSceneElementsIncludingDeleted(),
       ),
@@ -546,7 +560,7 @@ class Collab extends PureComponent<CollabProps, CollabState> {
         captureUpdate: CaptureUpdateAction.NEVER,
       });
 
-      this.saveCollabRoomToFirebase(getSyncableElements(elements));
+      this.saveCollabRoomToDatabase(getSyncableElements(elements));
     }
 
     // fallback in case you're not alone in the room but still don't receive
@@ -711,11 +725,20 @@ class Collab extends PureComponent<CollabProps, CollabState> {
       this.excalidrawAPI.resetScene();
 
       try {
-        const elements = await loadFromFirebase(
-          roomLinkData.roomId,
-          roomLinkData.roomKey,
-          this.portal.socket,
-        );
+        // Use PostgreSQL for persistent rooms, Firebase for temporary collaboration
+        const isPersistentRoom = import.meta.env.VITE_APP_PERSISTENT_ROOMS === 'true';
+        
+        const elements = isPersistentRoom
+          ? await loadFromPostgreSQL(
+              roomLinkData.roomId,
+              roomLinkData.roomKey,
+              this.portal.socket,
+            )
+          : await loadFromFirebase(
+              roomLinkData.roomId,
+              roomLinkData.roomKey,
+              this.portal.socket,
+            );
         if (elements) {
           this.setLastBroadcastedOrReceivedSceneVersion(
             getSceneVersion(elements),
@@ -929,7 +952,7 @@ class Collab extends PureComponent<CollabProps, CollabState> {
 
   syncElements = (elements: readonly OrderedExcalidrawElement[]) => {
     this.broadcastElements(elements);
-    this.queueSaveToFirebase();
+    this.queueSaveToDatabase();
   };
 
   queueBroadcastAllElements = throttle(() => {
@@ -946,10 +969,10 @@ class Collab extends PureComponent<CollabProps, CollabState> {
     this.setLastBroadcastedOrReceivedSceneVersion(newVersion);
   }, SYNC_FULL_SCENE_INTERVAL_MS);
 
-  queueSaveToFirebase = throttle(
+  queueSaveToDatabase = throttle(
     () => {
-      if (this.portal.socketInitialized) {
-        this.saveCollabRoomToFirebase(
+      if (this.portal.socket && this.isCollaborating()) {
+        this.saveCollabRoomToDatabase(
           getSyncableElements(
             this.excalidrawAPI.getSceneElementsIncludingDeleted(),
           ),

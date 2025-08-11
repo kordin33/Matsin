@@ -49,6 +49,20 @@ vi.mock("../../excalidraw-app/data/firebase.ts", () => {
   };
 });
 
+vi.mock("../../excalidraw-app/data/postgresql.ts", () => {
+  const loadFromPostgreSQL = async () => null;
+  const saveToPostgreSQL = () => {};
+  const isSavedToPostgreSQL = () => true;
+  const initializeDatabase = async () => {};
+
+  return {
+    loadFromPostgreSQL,
+    saveToPostgreSQL,
+    isSavedToPostgreSQL,
+    initializeDatabase,
+  };
+});
+
 vi.mock("socket.io-client", () => {
   return {
     default: () => {

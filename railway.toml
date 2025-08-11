@@ -1,0 +1,33 @@
+[build]
+builder = "dockerfile"
+dockerfilePath = "excalidraw/Dockerfile"
+
+[deploy]
+startCommand = "nginx -g 'daemon off;'"
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 10
+
+[environments.production]
+[environments.production.variables]
+NODE_ENV = "production"
+VITE_APP_PERSISTENT_ROOMS = "true"
+VITE_APP_EDUCATIONAL_MODE = "true"
+VITE_APP_DEBUG = "false"
+
+[environments.production.services]
+[environments.production.services.postgres]
+type = "postgresql"
+version = "15"
+
+# Cache mount configuration
+[[mounts]]
+type = "cache"
+id = "node_modules_cache"
+source = "/app/node_modules"
+target = "/app/node_modules"
+
+[[mounts]]
+type = "cache"
+id = "yarn_cache"
+source = "/usr/local/share/.cache/yarn"
+target = "/usr/local/share/.cache/yarn"

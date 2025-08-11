@@ -22,12 +22,12 @@
       name="description"
       content="Matsin is a virtual collaborative whiteboard tool that lets you easily sketch diagrams that have a hand-drawn feel to them."
     />
-    <meta name="image" content="https://excalidraw.com/og-image-3.png" />
+    <meta name="image" content="https://matsin.com/og-image-3.png" />
 
     <!-- Open Graph / Facebook -->
-    <meta property="og:site_name" content="Excalidraw" />
+    <meta property="og:site_name" content="Matsin" />
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://excalidraw.com" />
+    <meta property="og:url" content="https://matsin.com" />
     <meta
       property="og:title"
       content="Matsin — Collaborative whiteboarding made easy"
@@ -37,12 +37,12 @@
       property="og:description"
       content="Matsin is a virtual collaborative whiteboard tool that lets you easily sketch diagrams that have a hand-drawn feel to them."
     />
-    <meta property="og:image" content="https://excalidraw.com/og-image-3.png" />
+    <meta property="og:image" content="https://matsin.com/og-image-3.png" />
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:site" content="@excalidraw" />
-    <meta property="twitter:url" content="https://excalidraw.com" />
+    <meta property="twitter:site" content="@matsin" />
+    <meta property="twitter:url" content="https://matsin.com" />
     <meta
       property="twitter:title"
       content="Matsin — Collaborative whiteboarding made easy"
@@ -53,10 +53,10 @@
     />
     <meta
       property="twitter:image"
-      content="https://excalidraw.com/og-image-3.png"
+      content="https://matsin.com/og-image-3.png"
     />
 
-    <link rel="canonical" href="https://excalidraw.com" />
+    <link rel="canonical" href="https://matsin.com" />
 
     <!------------------------------------------------------------------------->
     <!--   to minimize white flash on load when user has dark mode enabled   -->
@@ -71,7 +71,7 @@
         }
 
         function getTheme() {
-          const theme = window.localStorage.getItem("excalidraw-theme");
+          const theme = window.localStorage.getItem("matsin-theme");
 
           if (theme && theme === "system") {
             return window.matchMedia("(prefers-color-scheme: dark)").matches
@@ -113,9 +113,9 @@
         !window.location.hash &&
         !window.location.search &&
         // if its present redirect
-        document.cookie.includes("excplus-autoredirect=true")
+        document.cookie.includes("matsin-autoredirect=true")
       ) {
-        window.location.href = "https://app.excalidraw.com";
+        window.location.href = "https://app.matsin.com";
       }
     </script>
 
@@ -139,7 +139,7 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
 
-    <!-- Excalidraw version -->
+    <!-- Matsin version -->
     <meta name="version" content="{version}" />
 
     <% if (typeof VITE_APP_DEV_DISABLE_LIVE_RELOAD != 'undefined' &&
@@ -161,7 +161,7 @@
     <% } %>
     <script>
       // setting this so that libraries installation reuses this window tab.
-      window.name = "_excalidraw";
+      window.name = "_matsin";
     </script>
 
     <!-- FIXME: remove this when we update CRA (fix SW caching) -->
@@ -212,7 +212,7 @@
   <body>
     <noscript> You need to enable JavaScript to run this app. </noscript>
     <header>
-      <h1 class="visually-hidden">Excalidraw</h1>
+      <h1 class="visually-hidden">Matsin</h1>
     </header>
     <div id="root"></div>
     <script type="module" src="index.tsx"></script>
