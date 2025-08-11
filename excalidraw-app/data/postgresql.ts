@@ -25,10 +25,7 @@ import type {
   ExcalidrawElement,
   OrderedExcalidrawElement,
 } from "@excalidraw/element/types";
-import type {
-  AppState,
-} from "@excalidraw/excalidraw/types";
-
+import type { AppState } from "@excalidraw/excalidraw/types";
 import { getSyncableElements } from ".";
 import type { SyncableExcalidrawElement } from ".";
 import type Portal from "../collab/Portal";
