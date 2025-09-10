@@ -13,9 +13,7 @@ const CORS_ORIGIN = process.env.CORS_ORIGIN || "*";
 app.use(cors({ origin: CORS_ORIGIN === "*" ? true : CORS_ORIGIN }));
 
 // Middleware for handling raw binary data for exportToBackend
-app.use("/api/scenes/", express.raw({ type: "*/*", limit: "10mb" }));
-
-// JSON middleware for other routes
+// JSON middleware for routes
 app.use(express.json({ limit: "2mb" }));
 
 app.use(router);

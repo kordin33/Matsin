@@ -230,6 +230,7 @@ const initializeScene = async (opts: {
   } = await loadScene(null, null, localDataState);
 
   let roomLinkData = getCollaborationLinkData(window.location.href);
+  const studentParam = new URL(window.location.href).searchParams.get("student");
   
   // Handle permalink resolution
   if (permalink && !roomLinkData && opts.collabAPI) {
@@ -261,6 +262,13 @@ const initializeScene = async (opts: {
         isExternalScene: false,
       };
     }
+  }
+  // If joining via direct #room=... link and student name provided in query, set it
+  if (roomLinkData && studentParam && opts.collabAPI) {
+    opts.collabAPI.setUsername(studentParam);
+    const newUrl = new URL(window.location.href);
+    newUrl.searchParams.delete('student');
+    window.history.replaceState({}, APP_NAME, newUrl.toString());
   }
   const isExternalScene = !!(id || jsonBackendMatch || roomLinkData);
   if (isExternalScene) {

@@ -79,10 +79,10 @@ import {
   saveToFirebase,
 } from "../data/firebase";
 import {
-  isSavedToPostgreSQL,
-  loadFromPostgreSQL,
-  saveToPostgreSQL,
-} from "../data/postgresql";
+  isSavedToServer,
+  loadFromServer,
+  saveToServer,
+} from "../data/restPersistence";
 import {
   importUsernameFromLocalStorage,
   saveUsernameToLocalStorage,
@@ -320,11 +320,11 @@ class Collab extends PureComponent<CollabProps, CollabState> {
     syncableElements: readonly SyncableExcalidrawElement[],
   ) => {
     try {
-      // Use PostgreSQL for persistent rooms, Firebase for temporary collaboration
+      // Use REST backend for persistent rooms, Firebase for temporary collaboration
       const isPersistentRoom = import.meta.env.VITE_APP_PERSISTENT_ROOMS === 'true';
-      
-      const storedElements = isPersistentRoom 
-        ? await saveToPostgreSQL(
+
+      const storedElements = isPersistentRoom
+        ? await saveToServer(
             this.portal,
             syncableElements,
             this.excalidrawAPI.getAppState(),
@@ -728,11 +728,11 @@ class Collab extends PureComponent<CollabProps, CollabState> {
       this.excalidrawAPI.resetScene();
 
       try {
-        // Use PostgreSQL for persistent rooms, Firebase for temporary collaboration
+        // Use REST backend for persistent rooms, Firebase for temporary collaboration
         const isPersistentRoom = import.meta.env.VITE_APP_PERSISTENT_ROOMS === 'true';
-        
+
         const elements = isPersistentRoom
-          ? await loadFromPostgreSQL(
+          ? await loadFromServer(
               roomLinkData.roomId,
               roomLinkData.roomKey,
               this.portal.socket,

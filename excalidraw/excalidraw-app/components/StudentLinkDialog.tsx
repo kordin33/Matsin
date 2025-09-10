@@ -6,7 +6,7 @@ import { useI18n } from "@excalidraw/excalidraw/i18n";
 import { KEYS } from "@excalidraw/common";
 import { useState, useRef, useEffect } from "react";
 import { copyTextToSystemClipboard } from "@excalidraw/excalidraw/clipboard";
-import { atom, useAtom } from "../app-jotai";
+import { atom } from "../app-jotai";
 import { generateCollaborationLinkData, getCollaborationLink } from "../data";
 import { useCopyStatus } from "@excalidraw/excalidraw/hooks/useCopiedIndicator";
 
@@ -58,7 +58,6 @@ export const StudentLinkDialog = ({
   const { onCopy, copyStatus } = useCopyStatus();
 
   useEffect(() => {
-    // Fokusuj input po otwarciu dialogu
     if (inputRef.current) {
       inputRef.current.focus();
     }
@@ -66,14 +65,13 @@ export const StudentLinkDialog = ({
 
   const createStudentLink = async () => {
     if (!newStudentName.trim()) return;
-    
+
     setIsCreating(true);
     try {
       const { roomId, roomKey } = await generateCollaborationLinkData();
       const baseUrl = getCollaborationLink({ roomId, roomKey });
-      // Add student name as URL parameter
       const url = `${baseUrl}&student=${encodeURIComponent(newStudentName.trim())}`;
-      
+
       const newLink: StudentLink = {
         id: Date.now().toString(),
         studentName: newStudentName.trim(),
@@ -105,7 +103,7 @@ export const StudentLinkDialog = ({
 
   const joinStudent = async (roomId: string, roomKey: string) => {
     if (!collabAPI) return;
-    
+
     try {
       await collabAPI.startCollaboration({ roomId, roomKey });
       handleClose();
@@ -115,7 +113,7 @@ export const StudentLinkDialog = ({
   };
 
   const deleteStudentLink = (linkId: string) => {
-    const updatedLinks = studentLinks.filter(link => link.id !== linkId);
+    const updatedLinks = studentLinks.filter((link) => link.id !== linkId);
     setStudentLinks(updatedLinks);
     saveStudentLinks(updatedLinks);
   };
@@ -127,7 +125,7 @@ export const StudentLinkDialog = ({
           {usersIcon}
           Zarządzanie uczniami
         </h2>
-        
+
         <div className="StudentLinkDialog__create">
           <h3>Utwórz trwały link dla ucznia</h3>
           <div className="StudentLinkDialog__create__form">
@@ -186,7 +184,11 @@ export const StudentLinkDialog = ({
                       color="danger"
                       label="Usuń"
                       onClick={() => {
-                        if (confirm(`Czy na pewno chcesz usunąć link dla ${link.studentName}?`)) {
+                        if (
+                          confirm(
+                            `Czy na pewno chcesz usunąć link dla ${link.studentName}?`,
+                          )
+                        ) {
                           deleteStudentLink(link.id);
                         }
                       }}
@@ -200,11 +202,16 @@ export const StudentLinkDialog = ({
 
         <div className="StudentLinkDialog__footer">
           <p className="StudentLinkDialog__info">
-            💡 <strong>Jak to działa:</strong><br />
-            1. Utwórz trwały link dla każdego ucznia<br />
-            2. Wyślij uczniowi jego unikalny link<br />
-            3. Uczeń zawsze używa tego samego linku<br />
-            4. Ty jako nauczyciel możesz dołączyć do dowolnej tablicy ucznia<br />
+            <strong>Jak to działa:</strong>
+            <br />
+            1. Utwórz trwały link dla każdego ucznia
+            <br />
+            2. Wyślij uczniowi jego unikalny link
+            <br />
+            3. Uczeń zawsze używa tego samego linku
+            <br />
+            4. Ty jako nauczyciel możesz dołączać do dowolnej tablicy ucznia
+            <br />
             5. Stan tablicy jest automatycznie zapisywany
           </p>
         </div>
@@ -212,3 +219,4 @@ export const StudentLinkDialog = ({
     </Dialog>
   );
 };
+
