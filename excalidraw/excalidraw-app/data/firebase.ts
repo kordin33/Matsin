@@ -53,11 +53,18 @@ try {
   FIREBASE_CONFIG = {};
 }
 
+const FIREBASE_ENABLED =
+  FIREBASE_CONFIG && Object.keys(FIREBASE_CONFIG).length > 0 &&
+  (FIREBASE_CONFIG.apiKey || FIREBASE_CONFIG.storageBucket);
+
 let firebaseApp: ReturnType<typeof initializeApp> | null = null;
 let firestore: ReturnType<typeof getFirestore> | null = null;
 let firebaseStorage: ReturnType<typeof getStorage> | null = null;
 
 const _initializeFirebase = () => {
+  if (!FIREBASE_ENABLED) {
+    return null;
+  }
   if (!firebaseApp) {
     firebaseApp = initializeApp(FIREBASE_CONFIG);
   }
@@ -65,15 +72,23 @@ const _initializeFirebase = () => {
 };
 
 const _getFirestore = () => {
+  const app = _initializeFirebase();
+  if (!app) {
+    return null as any;
+  }
   if (!firestore) {
-    firestore = getFirestore(_initializeFirebase());
+    firestore = getFirestore(app);
   }
   return firestore;
 };
 
 const _getStorage = () => {
+  const app = _initializeFirebase();
+  if (!app) {
+    return null as any;
+  }
   if (!firebaseStorage) {
-    firebaseStorage = getStorage(_initializeFirebase());
+    firebaseStorage = getStorage(app);
   }
   return firebaseStorage;
 };
@@ -149,6 +164,9 @@ export const saveFilesToFirebase = async ({
   prefix: string;
   files: { id: FileId; buffer: Uint8Array }[];
 }) => {
+  if (!FIREBASE_ENABLED) {
+    return { savedFiles: [], erroredFiles: files.map((f) => f.id) };
+  }
   const storage = await loadFirebaseStorage();
 
   const erroredFiles: FileId[] = [];
@@ -189,6 +207,9 @@ export const saveToFirebase = async (
   elements: readonly SyncableExcalidrawElement[],
   appState: AppState,
 ) => {
+  if (!FIREBASE_ENABLED) {
+    return null;
+  }
   const { roomId, roomKey, socket } = portal;
   if (
     // bail if no room exists as there's nothing we can do at this point
@@ -201,6 +222,9 @@ export const saveToFirebase = async (
   }
 
   const firestore = _getFirestore();
+  if (!firestore) {
+    return null;
+  }
   const docRef = doc(firestore, "scenes", roomId);
 
   const storedScene = await runTransaction(firestore, async (transaction) => {
@@ -251,7 +275,13 @@ export const loadFromFirebase = async (
   roomKey: string,
   socket: Socket | null,
 ): Promise<readonly SyncableExcalidrawElement[] | null> => {
+  if (!FIREBASE_ENABLED) {
+    return null;
+  }
   const firestore = _getFirestore();
+  if (!firestore) {
+    return null;
+  }
   const docRef = doc(firestore, "scenes", roomId);
   const docSnap = await getDoc(docRef);
   if (!docSnap.exists()) {

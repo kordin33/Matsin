@@ -1,5 +1,6 @@
 import debug from "debug";
 import express from "express";
+import cors from "cors";
 import http from "http";
 import { Server as SocketIO } from "socket.io";
 import { Pool } from "pg";
@@ -47,6 +48,7 @@ require("dotenv").config(
 );
 
 const app = express();
+app.use(cors({ origin: process.env.CORS_ORIGIN || "*", credentials: true }));
 const port =
   process.env.PORT || (process.env.NODE_ENV !== "development" ? 80 : 3002); // default port to listen
 

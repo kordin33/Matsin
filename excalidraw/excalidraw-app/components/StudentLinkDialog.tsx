@@ -9,6 +9,7 @@ import { copyTextToSystemClipboard } from "@excalidraw/excalidraw/clipboard";
 import { atom } from "../app-jotai";
 import { generateCollaborationLinkData, getCollaborationLink } from "../data";
 import { useCopyStatus } from "@excalidraw/excalidraw/hooks/useCopiedIndicator";
+import { apiClient } from "../data/api-client";
 
 import type { CollabAPI } from "../collab/Collab";
 
@@ -69,8 +70,13 @@ export const StudentLinkDialog = ({
     setIsCreating(true);
     try {
       const { roomId, roomKey } = await generateCollaborationLinkData();
-      const baseUrl = getCollaborationLink({ roomId, roomKey });
-      const url = `${baseUrl}&student=${encodeURIComponent(newStudentName.trim())}`;
+      // Create server-side permalink for stable sharing
+      const { permalink } = await apiClient.createPermalink({
+        room_id: roomId,
+        room_key: roomKey,
+        student_name: newStudentName.trim(),
+      });
+      const url = `${window.location.origin}${window.location.pathname}?permalink=${encodeURIComponent(permalink)}`;
 
       const newLink: StudentLink = {
         id: Date.now().toString(),
@@ -219,4 +225,3 @@ export const StudentLinkDialog = ({
     </Dialog>
   );
 };
-
