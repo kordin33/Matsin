@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excalidraw - Przykład Theme Wrapper</title>
+    
+    <!-- Import Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Import głównych stylów Excalidraw -->
+    <link rel="stylesheet" href="./index.scss">
+    
+    <!-- Import naszego theme wrapper -->
+    <link rel="stylesheet" href="./theme-wrapper.scss">
+    
+    <style>
+        /* Dodatkowe style dla przykładu */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .demo-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        .theme-selector {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .theme-button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        
+        .theme-button:hover {
+            background: rgba(255, 255, 255, 1);
+            transform: translateY(-1px);
+        }
+        
+        .theme-button.active {
+            background: #ff6b6b;
+            color: white;
+        }
+        
+        /* Różne warianty theme */
+        .theme-blue .excalidraw {
+            --color-primary: #4285f4;
+            --color-primary-darker: #3367d6;
+            --color-primary-darkest: #1a73e8;
+            --color-primary-light: #e8f0fe;
+        }
+        
+        .theme-green .excalidraw {
+            --color-primary: #34a853;
+            --color-primary-darker: #2d8f47;
+            --color-primary-darkest: #1e7e34;
+            --color-primary-light: #e6f4ea;
+        }
+        
+        .theme-purple .excalidraw {
+            --color-primary: #9c27b0;
+            --color-primary-darker: #8e24aa;
+            --color-primary-darkest: #7b1fa2;
+            --color-primary-light: #f3e5f5;
+        }
+        
+        .theme-orange .excalidraw {
+            --color-primary: #ff9800;
+            --color-primary-darker: #f57c00;
+            --color-primary-darkest: #ef6c00;
+            --color-primary-light: #fff3e0;
+        }
+        
+        /* Efekt glassmorphism */
+        .theme-glass .excalidraw .App-toolbar,
+        .theme-glass .excalidraw .dropdown-menu,
+        .theme-glass .excalidraw .Modal__content {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        /* Efekt neon */
+        .theme-neon .excalidraw {
+            background: #0a0a0a;
+        }
+        
+        .theme-neon .excalidraw .ToolIcon__icon[aria-pressed="true"] {
+            box-shadow: 
+                0 0 10px var(--color-primary),
+                0 0 20px var(--color-primary),
+                0 0 30px var(--color-primary);
+        }
+        
+        /* Minimalistyczny theme */
+        .theme-minimal .excalidraw {
+            --color-primary: #000000;
+            --color-primary-darker: #333333;
+            --color-primary-darkest: #666666;
+            --color-primary-light: #f5f5f5;
+            --island-bg-color: #ffffff;
+            --default-bg-color: #fafafa;
+        }
+        
+        .theme-minimal .excalidraw .App-toolbar {
+            background: #ffffff;
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <!-- Selektor theme -->
+        <div class="theme-selector">
+            <button class="theme-button active" onclick="setTheme('')">Domyślny</button>
+            <button class="theme-button" onclick="setTheme('theme-blue')">Niebieski</button>
+            <button class="theme-button" onclick="setTheme('theme-green')">Zielony</button>
+            <button class="theme-button" onclick="setTheme('theme-purple')">Fioletowy</button>
+            <button class="theme-button" onclick="setTheme('theme-orange')">Pomarańczowy</button>
+            <button class="theme-button" onclick="setTheme('theme-glass')">Glass</button>
+            <button class="theme-button" onclick="setTheme('theme-neon')">Neon</button>
+            <button class="theme-button" onclick="setTheme('theme-minimal')">Minimal</button>
+        </div>
+        
+        <!-- Kontener Excalidraw z theme wrapper -->
+        <div class="excalidraw-theme-wrapper" id="excalidraw-container">
+            <!-- Tutaj zostanie załadowany Excalidraw -->
+        </div>
+    </div>
+    
+    <script type="module">
+        // Import Excalidraw
+        import { Excalidraw } from "@excalidraw/excalidraw";
+        import { createElement } from "react";
+        import { createRoot } from "react-dom/client";
+        
+        // Funkcja do zmiany theme
+        window.setTheme = function(themeClass) {
+            const container = document.getElementById('excalidraw-container');
+            container.className = `excalidraw-theme-wrapper ${themeClass}`;
+            
+            // Aktualizuj aktywny przycisk
+            document.querySelectorAll('.theme-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        }
+        
+        // Inicjalizacja Excalidraw
+        const container = document.getElementById('excalidraw-container');
+        const root = createRoot(container);
+        
+        // Konfiguracja Excalidraw
+        const excalidrawConfig = {
+            initialData: {
+                elements: [],
+                appState: {
+                    viewBackgroundColor: "transparent",
+                    currentItemFontFamily: 1,
+                    currentItemFontSize: 16,
+                    currentItemStrokeColor: "#ff6b6b",
+                    currentItemBackgroundColor: "transparent",
+                    currentItemFillStyle: "hachure",
+                    currentItemStrokeWidth: 2,
+                    currentItemRoughness: 1,
+                    currentItemOpacity: 100,
+                    currentItemStrokeStyle: "solid",
+                    currentItemStartArrowhead: null,
+                    currentItemEndArrowhead: "arrow"
+                }
+            },
+            UIOptions: {
+                canvasActions: {
+                    loadScene: true,
+                    saveToActiveFile: true,
+                    export: {
+                        saveFileToDisk: true
+                    },
+                    theme: true
+                }
+            }
+        };
+        
+        // Renderuj Excalidraw
+        root.render(
+            createElement(Excalidraw, excalidrawConfig)
+        );
+        
+        // Dodaj obsługę skrótów klawiszowych dla zmiany theme
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.shiftKey) {
+                switch(e.key) {
+                    case '1':
+                        setTheme('');
+                        break;
+                    case '2':
+                        setTheme('theme-blue');
+                        break;
+                    case '3':
+                        setTheme('theme-green');
+                        break;
+                    case '4':
+                        setTheme('theme-purple');
+                        break;
+                    case '5':
+                        setTheme('theme-orange');
+                        break;
+                    case '6':
+                        setTheme('theme-glass');
+                        break;
+                    case '7':
+                        setTheme('theme-neon');
+                        break;
+                    case '8':
+                        setTheme('theme-minimal');
+                        break;
+                }
+            }
+        });
+        
+        // Automatyczne przełączanie theme co 10 sekund (demo)
+        let autoThemeEnabled = false;
+        const themes = ['', 'theme-blue', 'theme-green', 'theme-purple', 'theme-orange', 'theme-glass', 'theme-neon', 'theme-minimal'];
+        let currentThemeIndex = 0;
+        
+        window.toggleAutoTheme = function() {
+            autoThemeEnabled = !autoThemeEnabled;
+            if (autoThemeEnabled) {
+                const interval = setInterval(() => {
+                    if (!autoThemeEnabled) {
+                        clearInterval(interval);
+                        return;
+                    }
+                    currentThemeIndex = (currentThemeIndex + 1) % themes.length;
+                    setTheme(themes[currentThemeIndex]);
+                }, 3000);
+            }
+        }
+        
+        // Dodaj przycisk auto-theme
+        const autoButton = document.createElement('button');
+        autoButton.className = 'theme-button';
+        autoButton.textContent = 'Auto';
+        autoButton.onclick = window.toggleAutoTheme;
+        document.querySelector('.theme-selector').appendChild(autoButton);
+        
+        console.log('🎨 Excalidraw Theme Wrapper załadowany!');
+        console.log('💡 Skróty klawiszowe: Ctrl+Shift+1-8 dla zmiany theme');
+        console.log('🔄 Kliknij "Auto" aby automatycznie przełączać theme');
+    </script>
+</body>
+</html>

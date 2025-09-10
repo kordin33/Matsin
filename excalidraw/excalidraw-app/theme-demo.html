@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excalidraw Theme Wrapper - Demo</title>
+    
+    <!-- Excalidraw styles (symulacja) -->
+    <style>
+        /* Podstawowe style Excalidraw (symulacja dla demo) */
+        .excalidraw {
+            width: 100%;
+            height: 500px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: var(--default-bg-color, #ffffff);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .excalidraw .App-toolbar {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: var(--island-bg-color, #f8f9fa);
+            border-radius: 8px;
+            padding: 12px;
+            box-shadow: var(--shadow-island, 0 4px 20px rgba(0, 0, 0, 0.15));
+            display: flex;
+            gap: 8px;
+        }
+        
+        .excalidraw .App-toolbar button {
+            background: var(--button-gray-1, #ffffff);
+            border: 1px solid var(--color-gray-30, #e0e0e0);
+            border-radius: 4px;
+            padding: 8px 12px;
+            cursor: pointer;
+            color: var(--text-primary-color, #1e1e1e);
+            transition: all 0.2s ease;
+        }
+        
+        .excalidraw .App-toolbar button:hover {
+            background: var(--button-hover-bg, #f8f9fa);
+            border-color: var(--color-primary, #6965db);
+        }
+        
+        .excalidraw .App-toolbar button.active {
+            background: var(--color-primary, #6965db);
+            color: white;
+            border-color: var(--color-primary, #6965db);
+        }
+        
+        .excalidraw .canvas-wrapper {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--default-bg-color, #ffffff);
+        }
+        
+        .excalidraw .canvas-wrapper::after {
+            content: 'Excalidraw Canvas Area';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: var(--text-secondary-color, #6c757d);
+            font-size: 24px;
+            font-weight: 300;
+        }
+    </style>
+    
+    <!-- Theme Wrapper Styles -->
+    <link rel="stylesheet" href="theme-wrapper.scss">
+    
+    <!-- Demo specific styles -->
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+        }
+        
+        .demo-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .demo-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .demo-header h1 {
+            color: #2d3748;
+            margin-bottom: 10px;
+        }
+        
+        .demo-header p {
+            color: #6c757d;
+            font-size: 18px;
+        }
+        
+        .demo-controls {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .control-section {
+            margin-bottom: 20px;
+        }
+        
+        .control-section:last-child {
+            margin-bottom: 0;
+        }
+        
+        .control-section h3 {
+            margin-bottom: 10px;
+            color: #2d3748;
+            font-size: 16px;
+        }
+        
+        .theme-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .theme-button {
+            padding: 8px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .theme-button:hover {
+            border-color: #6965db;
+            background: #f8f9fa;
+        }
+        
+        .theme-button.active {
+            background: #6965db;
+            color: white;
+            border-color: #6965db;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .action-button {
+            padding: 8px 16px;
+            border: 1px solid #6965db;
+            border-radius: 6px;
+            background: white;
+            color: #6965db;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+        }
+        
+        .action-button:hover {
+            background: #6965db;
+            color: white;
+        }
+        
+        .color-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .color-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .color-control label {
+            font-size: 14px;
+            color: #4a5568;
+        }
+        
+        .color-control input[type="color"] {
+            width: 40px;
+            height: 30px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .info-panel {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        
+        .info-panel h4 {
+            margin-bottom: 8px;
+            color: #2d3748;
+        }
+        
+        .info-panel p {
+            color: #6c757d;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .current-theme {
+            display: inline-block;
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 500;
+            font-size: 12px;
+        }
+        
+        .keyboard-shortcuts {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 6px;
+            padding: 10px;
+            margin-top: 10px;
+        }
+        
+        .keyboard-shortcuts h4 {
+            color: #856404;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        
+        .keyboard-shortcuts ul {
+            list-style: none;
+            font-size: 12px;
+            color: #856404;
+        }
+        
+        .keyboard-shortcuts li {
+            margin-bottom: 2px;
+        }
+        
+        .keyboard-shortcuts code {
+            background: #fff;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        
+        @media (max-width: 768px) {
+            .demo-container {
+                padding: 10px;
+            }
+            
+            .theme-buttons,
+            .action-buttons,
+            .color-controls {
+                justify-content: center;
+            }
+            
+            .demo-header h1 {
+                font-size: 24px;
+            }
+            
+            .demo-header p {
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <div class="demo-header">
+            <h1>🎨 Excalidraw Theme Wrapper</h1>
+            <p>Kompletny system stylizacji bez modyfikacji kodu źródłowego</p>
+        </div>
+        
+        <div class="demo-controls">
+            <div class="control-section">
+                <h3>🎯 Wybierz Theme</h3>
+                <div class="theme-buttons" id="theme-buttons">
+                    <!-- Buttons will be generated by JavaScript -->
+                </div>
+            </div>
+            
+            <div class="control-section">
+                <h3>⚡ Szybkie Akcje</h3>
+                <div class="action-buttons">
+                    <button class="action-button" onclick="themeManager.nextTheme()">Następny Theme</button>
+                    <button class="action-button" onclick="themeManager.previousTheme()">Poprzedni Theme</button>
+                    <button class="action-button" onclick="themeManager.randomTheme()">Losowy Theme</button>
+                    <button class="action-button" onclick="exportConfig()">Eksportuj Konfigurację</button>
+                    <button class="action-button" onclick="document.getElementById('import-file').click()">Importuj Konfigurację</button>
+                    <input type="file" id="import-file" accept=".json" style="display: none" onchange="importConfig(event)">
+                </div>
+            </div>
+            
+            <div class="control-section">
+                <h3>🎨 Niestandardowe Kolory</h3>
+                <div class="color-controls">
+                    <div class="color-control">
+                        <label>Kolor główny:</label>
+                        <input type="color" id="primary-color" value="#6965db" onchange="updateColor('--color-primary', this.value)">
+                    </div>
+                    <div class="color-control">
+                        <label>Tło:</label>
+                        <input type="color" id="bg-color" value="#ffffff" onchange="updateColor('--default-bg-color', this.value)">
+                    </div>
+                    <div class="color-control">
+                        <label>Tło wysp:</label>
+                        <input type="color" id="island-color" value="#f8f9fa" onchange="updateColor('--island-bg-color', this.value)">
+                    </div>
+                    <div class="color-control">
+                        <label>Tekst:</label>
+                        <input type="color" id="text-color" value="#1e1e1e" onchange="updateColor('--text-primary-color', this.value)">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="info-panel">
+                <h4>ℹ️ Aktualny Theme: <span class="current-theme" id="current-theme">default</span></h4>
+                <p>Użyj przycisków powyżej lub skrótów klawiszowych do zmiany theme. Wszystkie zmiany są automatycznie zapisywane w localStorage.</p>
+                
+                <div class="keyboard-shortcuts">
+                    <h4>⌨️ Skróty klawiszowe:</h4>
+                    <ul>
+                        <li><code>Ctrl+Shift+T</code> - Następny theme</li>
+                        <li><code>Ctrl+Shift+R</code> - Losowy theme</li>
+                        <li><code>Ctrl+Shift+1-8</code> - Konkretny theme</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Excalidraw Container -->
+        <div class="excalidraw-theme-wrapper" id="excalidraw-container">
+            <div class="excalidraw">
+                <div class="App-toolbar">
+                    <button class="active">✏️</button>
+                    <button>📐</button>
+                    <button>⭕</button>
+                    <button>📝</button>
+                    <button>🖼️</button>
+                </div>
+                <div class="canvas-wrapper"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Theme Wrapper JavaScript -->
+    <script src="theme-wrapper.js"></script>
+    
+    <!-- Demo JavaScript -->
+    <script>
+        let themeManager;
+        
+        // Initialize theme manager
+        function initThemeManager() {
+            themeManager = new ExcalidrawThemeManager({
+                containerSelector: '#excalidraw-container',
+                defaultTheme: 'blue',
+                autoSave: true
+            });
+            
+            // Add event listeners
+            themeManager.on('onThemeChange', (theme) => {
+                updateCurrentThemeDisplay();
+                updateThemeButtons();
+                console.log('Theme changed to:', theme);
+            });
+            
+            // Generate theme buttons
+            generateThemeButtons();
+            
+            // Update initial display
+            updateCurrentThemeDisplay();
+            updateThemeButtons();
+            
+            // Add keyboard shortcuts
+            addThemeKeyboardShortcuts(themeManager);
+        }
+        
+        // Generate theme buttons
+        function generateThemeButtons() {
+            const container = document.getElementById('theme-buttons');
+            const themes = themeManager.getAvailableThemes();
+            
+            // Add default theme button
+            const defaultButton = document.createElement('button');
+            defaultButton.className = 'theme-button';
+            defaultButton.textContent = 'Default';
+            defaultButton.onclick = () => themeManager.setTheme('');
+            container.appendChild(defaultButton);
+            
+            // Add other theme buttons
+            Object.entries(themes).forEach(([name, className]) => {
+                if (name) { // Skip empty name (default)
+                    const button = document.createElement('button');
+                    button.className = 'theme-button';
+                    button.textContent = name.charAt(0).toUpperCase() + name.slice(1);
+                    button.onclick = () => themeManager.setTheme(name);
+                    container.appendChild(button);
+                }
+            });
+        }
+        
+        // Update current theme display
+        function updateCurrentThemeDisplay() {
+            const currentThemeElement = document.getElementById('current-theme');
+            const currentTheme = themeManager.getCurrentTheme();
+            const themeName = Object.keys(themeManager.getAvailableThemes())
+                .find(key => themeManager.getAvailableThemes()[key] === currentTheme) || 'default';
+            
+            currentThemeElement.textContent = themeName || 'default';
+        }
+        
+        // Update theme buttons active state
+        function updateThemeButtons() {
+            const buttons = document.querySelectorAll('.theme-button');
+            const currentTheme = themeManager.getCurrentTheme();
+            const themes = themeManager.getAvailableThemes();
+            
+            buttons.forEach((button, index) => {
+                button.classList.remove('active');
+                
+                if (index === 0 && !currentTheme) {
+                    // Default theme
+                    button.classList.add('active');
+                } else {
+                    const themeName = button.textContent.toLowerCase();
+                    if (themes[themeName] === currentTheme) {
+                        button.classList.add('active');
+                    }
+                }
+            });
+        }
+        
+        // Update CSS color variable
+        function updateColor(variable, value) {
+            const container = document.getElementById('excalidraw-container');
+            container.style.setProperty(variable, value);
+            
+            // Save to theme manager if available
+            if (themeManager && themeManager.setCSSVariable) {
+                themeManager.setCSSVariable(variable, value);
+            }
+        }
+        
+        // Export configuration
+        function exportConfig() {
+            if (!themeManager) return;
+            
+            const config = themeManager.exportConfig();
+            const blob = new Blob([JSON.stringify(config, null, 2)], {
+                type: 'application/json'
+            });
+            
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'excalidraw-theme-config.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            alert('Konfiguracja została wyeksportowana!');
+        }
+        
+        // Import configuration
+        function importConfig(event) {
+            const file = event.target.files[0];
+            if (!file || !themeManager) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const config = JSON.parse(e.target.result);
+                    themeManager.importConfig(config);
+                    
+                    // Update display
+                    updateCurrentThemeDisplay();
+                    updateThemeButtons();
+                    
+                    alert('Konfiguracja została zaimportowana!');
+                } catch (error) {
+                    alert('Błąd podczas importowania konfiguracji: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+            
+            // Reset file input
+            event.target.value = '';
+        }
+        
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if theme-wrapper.js is loaded
+            if (typeof ExcalidrawThemeManager === 'undefined') {
+                console.error('ExcalidrawThemeManager nie jest dostępny. Upewnij się, że theme-wrapper.js jest załadowany.');
+                document.body.innerHTML = `
+                    <div style="text-align: center; padding: 50px; color: #e74c3c;">
+                        <h1>❌ Błąd ładowania</h1>
+                        <p>Nie można załadować ExcalidrawThemeManager.</p>
+                        <p>Upewnij się, że plik <code>theme-wrapper.js</code> istnieje i jest poprawnie załadowany.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            initThemeManager();
+        });
+        
+        // Add some demo interactions
+        document.addEventListener('keydown', function(e) {
+            // Show current theme on F1
+            if (e.key === 'F1') {
+                e.preventDefault();
+                const currentTheme = themeManager ? themeManager.getCurrentTheme() : 'none';
+                alert(`Aktualny theme: ${currentTheme || 'default'}`);
+            }
+        });
+        
+        // Add theme change animation
+        function addThemeChangeAnimation() {
+            const container = document.getElementById('excalidraw-container');
+            container.style.transition = 'all 0.3s ease';
+        }
+        
+        // Call animation setup
+        setTimeout(addThemeChangeAnimation, 100);
+        
+        // Add some helpful console messages
+        console.log('🎨 Excalidraw Theme Wrapper Demo');
+        console.log('Dostępne komendy:');
+        console.log('- themeManager.setTheme("blue") - ustaw theme');
+        console.log('- themeManager.nextTheme() - następny theme');
+        console.log('- themeManager.randomTheme() - losowy theme');
+        console.log('- themeManager.exportConfig() - eksportuj konfigurację');
+        console.log('Skróty klawiszowe: Ctrl+Shift+T (następny), Ctrl+Shift+R (losowy), F1 (info)');
+    </script>
+</body>
+</html>

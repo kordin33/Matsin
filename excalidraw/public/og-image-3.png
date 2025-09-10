@@ -1,0 +1,7 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#F8FAFC"/>
+  <rect x="500" y="215" width="200" height="200" rx="38" fill="#6366F1"/>
+  <path d="M550 365V265H589L625 329L661 265H700V365H681V295L649 343H601L569 295V365H550Z" fill="white"/>
+  <text x="600" y="450" text-anchor="middle" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="#1E293B">Matsin</text>
+  <text x="600" y="500" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" fill="#64748B">Collaborative Whiteboard</text>
+</svg>
