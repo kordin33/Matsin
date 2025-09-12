@@ -19,6 +19,7 @@ export interface PermalinkCreateRequest {
   room_id: string;
   room_key: string;
   student_name?: string;
+  teacher_id?: string;
 }
 
 export interface PermalinkResponse {
@@ -29,6 +30,20 @@ export interface PermalinkData {
   roomId: string;
   roomKey: string;
   studentName?: string;
+}
+
+export interface TeacherPermalinkItem {
+  permalink: string;
+  room_id: string;
+  room_key: string;
+  student_name: string | null;
+  created_at: string;
+  last_accessed: string | null;
+  is_active: number;
+}
+
+export interface TeacherPermalinkList {
+  items: TeacherPermalinkItem[];
 }
 
 class ApiClient {
@@ -105,6 +120,18 @@ class ApiClient {
       }
       throw error;
     }
+  }
+
+  async listPermalinks(teacherId: string): Promise<TeacherPermalinkList> {
+    const params = new URLSearchParams({ teacher_id: teacherId });
+    return this.request<TeacherPermalinkList>(`/api/permalinks?${params.toString()}`);
+  }
+
+  async deletePermalink(permalink: string, teacherId: string): Promise<{ ok: boolean }> {
+    const params = new URLSearchParams({ teacher_id: teacherId });
+    return this.request<{ ok: boolean }>(`/api/permalinks/${encodeURIComponent(permalink)}?${params.toString()}`, {
+      method: 'DELETE',
+    });
   }
 
   // Health check

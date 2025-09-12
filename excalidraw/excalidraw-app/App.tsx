@@ -1,6 +1,5 @@
 import {
   Excalidraw,
-  LiveCollaborationTrigger,
   TTDDialogTrigger,
   CaptureUpdateAction,
   reconcileElements,
@@ -256,7 +255,8 @@ const initializeScene = async (opts: {
       return {
         scene: {
           appState: {
-            errorMessage: t('alerts.permalinkNotFound'),
+            // Use existing i18n key to satisfy types
+            errorMessage: t('alerts.invalidSceneUrl'),
           },
         },
         isExternalScene: false,
@@ -910,12 +910,6 @@ const ExcalidrawWrapper = () => {
           return (
             <div className="top-right-ui">
               {collabError.message && <CollabError collabError={collabError} />}
-              <LiveCollaborationTrigger
-                isCollaborating={isCollaborating}
-                onSelect={() =>
-                  setShareDialogState({ isOpen: true, type: "share" })
-                }
-              />
             </div>
           );
         }}

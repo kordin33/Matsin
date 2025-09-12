@@ -109,19 +109,94 @@ function generatePermalink(): string {
 }
 
 router.post("/api/permalinks", async (req, res) => {
-  const { room_id, room_key, student_name } = req.body || {};
-  if (typeof room_id !== "string" || typeof room_key !== "string") {
+  const { room_id, room_key, student_name, teacher_id } = req.body || {};
+  if (
+    typeof room_id !== "string" ||
+    typeof room_key !== "string" ||
+    (teacher_id != null && typeof teacher_id !== "string")
+  ) {
     return res.status(400).json({ error: "invalid_payload" });
   }
-  const permalink = generatePermalink();
   try {
+    // 1) If teacher+student provided, return existing mapping if any
+    if (teacher_id && student_name && typeof student_name === "string") {
+      const existingByTeacherStudent = await dbGet(
+        `SELECT permalink FROM permalinks WHERE teacher_id = ? AND student_name = ? AND is_active = 1 LIMIT 1`,
+        [teacher_id, student_name],
+      );
+      if (existingByTeacherStudent?.permalink) {
+        return res.json({ permalink: existingByTeacherStudent.permalink });
+      }
+    }
+
+    // 2) If a mapping already exists for the room, reuse it to keep the link stable
+    const existingByRoom = await dbGet(
+      `SELECT permalink FROM permalinks WHERE room_id = ? AND room_key = ? AND is_active = 1 LIMIT 1`,
+      [room_id, room_key],
+    );
+    if (existingByRoom?.permalink) {
+      return res.json({ permalink: existingByRoom.permalink });
+    }
+
+    // 3) Create a new permalink
+    const permalink = generatePermalink();
     await dbRun(
-      `INSERT INTO permalinks (permalink, room_id, room_key, student_name) VALUES (?, ?, ?, ?)`,
-      [permalink, room_id, room_key, student_name || null],
+      `INSERT INTO permalinks (permalink, room_id, room_key, student_name, teacher_id) VALUES (?, ?, ?, ?, ?)`,
+      [permalink, room_id, room_key, student_name || null, teacher_id || null],
     );
     return res.json({ permalink });
   } catch (err) {
+    // Handle unique constraint on (teacher_id, student_name) by returning existing
+    if ((err as any)?.code === "SQLITE_CONSTRAINT") {
+      try {
+        const existing = await dbGet(
+          `SELECT permalink FROM permalinks WHERE teacher_id = ? AND student_name = ? AND is_active = 1 LIMIT 1`,
+          [teacher_id, student_name],
+        );
+        if (existing?.permalink) {
+          return res.json({ permalink: existing.permalink });
+        }
+      } catch (_) {}
+    }
     console.error("POST /api/permalinks error", err);
+    return res.status(500).json({ error: "internal_error" });
+  }
+});
+
+// List permalinks for a teacher
+router.get("/api/permalinks", async (req, res) => {
+  const { teacher_id } = req.query as { teacher_id?: string };
+  if (!teacher_id) {
+    return res.status(400).json({ error: "missing_teacher_id" });
+  }
+  try {
+    const rows = await dbAll(
+      `SELECT permalink, room_id, room_key, student_name, created_at, last_accessed, is_active
+       FROM permalinks WHERE teacher_id = ? AND is_active = 1 ORDER BY created_at DESC`,
+      [teacher_id],
+    );
+    return res.json({ items: rows });
+  } catch (err) {
+    console.error("GET /api/permalinks?teacher_id error", err);
+    return res.status(500).json({ error: "internal_error" });
+  }
+});
+
+// Deactivate a permalink (teacher-managed)
+router.delete("/api/permalinks/:permalink", async (req, res) => {
+  const { permalink } = req.params;
+  const { teacher_id } = req.query as { teacher_id?: string };
+  if (!teacher_id) {
+    return res.status(400).json({ error: "missing_teacher_id" });
+  }
+  try {
+    const result = await dbRun(
+      `UPDATE permalinks SET is_active = 0 WHERE permalink = ? AND teacher_id = ?`,
+      [permalink, teacher_id],
+    );
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error("DELETE /api/permalinks/:permalink error", err);
     return res.status(500).json({ error: "internal_error" });
   }
 });

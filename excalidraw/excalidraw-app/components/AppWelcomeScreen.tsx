@@ -51,11 +51,7 @@ export const AppWelcomeScreen: React.FC<{
         <WelcomeScreen.Center.Menu>
           <WelcomeScreen.Center.MenuItemLoadScene />
           <WelcomeScreen.Center.MenuItemHelp />
-          {props.isCollabEnabled && (
-            <WelcomeScreen.Center.MenuItemLiveCollaborationTrigger
-              onSelect={() => props.onCollabDialogOpen()}
-            />
-          )}
+          {/* Collaboration trigger removed to simplify UI (permalinks only) */}
           {!isMatsinPlusSignedUser && (
             <WelcomeScreen.Center.MenuItemLink
               href={`${

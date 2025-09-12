@@ -7,7 +7,7 @@ import { KEYS } from "@excalidraw/common";
 import { useState, useRef, useEffect } from "react";
 import { copyTextToSystemClipboard } from "@excalidraw/excalidraw/clipboard";
 import { atom } from "../app-jotai";
-import { generateCollaborationLinkData, getCollaborationLink } from "../data";
+import { generateCollaborationLinkData } from "../data";
 import { useCopyStatus } from "@excalidraw/excalidraw/hooks/useCopiedIndicator";
 import { apiClient } from "../data/api-client";
 
@@ -17,6 +17,7 @@ import "./StudentLinkDialog.scss";
 
 // Przechowujemy trwałe linki dla studentów w localStorage
 const STUDENT_LINKS_KEY = "matsin:studentLinks";
+const TEACHER_KEY = "matsin:teacherKey";
 
 export const studentLinkDialogStateAtom = atom<
   { isOpen: false } | { isOpen: true }
@@ -27,6 +28,7 @@ interface StudentLink {
   studentName: string;
   roomId: string;
   roomKey: string;
+  permalink?: string;
   url: string;
   createdAt: string;
 }
@@ -55,6 +57,24 @@ export const StudentLinkDialog = ({
   const [studentLinks, setStudentLinks] = useState<StudentLink[]>(loadStudentLinks);
   const [newStudentName, setNewStudentName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+  const [teacherId] = useState<string>(() => {
+    try {
+      const url = new URL(window.location.href);
+      const fromUrl = url.searchParams.get("teacher");
+      const fromStorage = localStorage.getItem(TEACHER_KEY);
+      const value = fromUrl || fromStorage || Math.random().toString(36).slice(2, 12);
+      localStorage.setItem(TEACHER_KEY, value);
+      if (fromUrl) {
+        url.searchParams.delete("teacher");
+        window.history.replaceState({}, document.title, url.toString());
+      }
+      return value;
+    } catch {
+      const value = Math.random().toString(36).slice(2, 12);
+      localStorage.setItem(TEACHER_KEY, value);
+      return value;
+    }
+  });
   const inputRef = useRef<HTMLInputElement>(null);
   const { onCopy, copyStatus } = useCopyStatus();
 
@@ -64,25 +84,68 @@ export const StudentLinkDialog = ({
     }
   }, []);
 
+  // Load server-side student links for this teacher on open
+  useEffect(() => {
+    (async () => {
+      try {
+        if (!teacherId) return;
+        const list = await apiClient.listPermalinks(teacherId);
+        const mapped: StudentLink[] = (list.items || []).map((it) => {
+          const name = it.student_name || "Uczeń";
+          const url = `${window.location.origin}${window.location.pathname}?permalink=${encodeURIComponent(it.permalink)}${name ? `&student=${encodeURIComponent(name)}` : ""}`;
+          return {
+            id: it.permalink,
+            studentName: name,
+            roomId: it.room_id,
+            roomKey: it.room_key,
+            permalink: it.permalink,
+            url,
+            createdAt: new Date(it.created_at).toLocaleDateString("pl-PL"),
+          };
+        });
+        if (mapped.length) {
+          setStudentLinks(mapped);
+          saveStudentLinks(mapped);
+        }
+      } catch (e) {
+        // ignore
+      }
+    })();
+  }, [teacherId]);
+
   const createStudentLink = async () => {
     if (!newStudentName.trim()) return;
 
     setIsCreating(true);
     try {
+      const name = newStudentName.trim();
+      const exists = studentLinks.some(
+        (s) => s.studentName.toLowerCase() === name.toLowerCase(),
+      );
+      if (exists) {
+        alert(
+          `Link dla ucznia "${name}" już istnieje. Użyj istniejącego linku lub usuń go, aby wygenerować nowy.`,
+        );
+        return;
+      }
       const { roomId, roomKey } = await generateCollaborationLinkData();
       // Create server-side permalink for stable sharing
       const { permalink } = await apiClient.createPermalink({
         room_id: roomId,
         room_key: roomKey,
-        student_name: newStudentName.trim(),
+        student_name: name,
+        teacher_id: teacherId,
       });
-      const url = `${window.location.origin}${window.location.pathname}?permalink=${encodeURIComponent(permalink)}`;
+      const url = `${window.location.origin}${window.location.pathname}?permalink=${encodeURIComponent(
+        permalink,
+      )}&student=${encodeURIComponent(name)}`;
 
       const newLink: StudentLink = {
         id: Date.now().toString(),
-        studentName: newStudentName.trim(),
+        studentName: name,
         roomId,
         roomKey,
+        permalink,
         url,
         createdAt: new Date().toLocaleDateString("pl-PL"),
       };
@@ -118,8 +181,16 @@ export const StudentLinkDialog = ({
     }
   };
 
-  const deleteStudentLink = (linkId: string) => {
-    const updatedLinks = studentLinks.filter((link) => link.id !== linkId);
+  const deleteStudentLink = async (linkId: string) => {
+    const link = studentLinks.find((l) => l.id === linkId);
+    try {
+      if (link?.permalink) {
+        await apiClient.deletePermalink(link.permalink, teacherId);
+      }
+    } catch (e) {
+      // ignore backend failure; proceed with local removal
+    }
+    const updatedLinks = studentLinks.filter((l) => l.id !== linkId);
     setStudentLinks(updatedLinks);
     saveStudentLinks(updatedLinks);
   };
@@ -131,6 +202,20 @@ export const StudentLinkDialog = ({
           {usersIcon}
           Zarządzanie uczniami
         </h2>
+
+        <div className="StudentLinkDialog__teacher">
+          <small>
+            Twój link zarządzania: {`${window.location.origin}${window.location.pathname}?teacher=${teacherId}`}
+          </small>
+          <FilledButton
+            size="medium"
+            variant="outlined"
+            label="Kopiuj link nauczyciela"
+            icon={copyIcon}
+            status={copyStatus}
+            onClick={() => copyStudentLink(`${window.location.origin}${window.location.pathname}?teacher=${teacherId}`)}
+          />
+        </div>
 
         <div className="StudentLinkDialog__create">
           <h3>Utwórz trwały link dla ucznia</h3>

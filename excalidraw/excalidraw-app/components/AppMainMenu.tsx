@@ -31,12 +31,7 @@ export const AppMainMenu: React.FC<{
     <MainMenu>
 
       <MainMenu.DefaultItems.SaveAsImage />
-      {props.isCollabEnabled && (
-        <MainMenu.DefaultItems.LiveCollaborationTrigger
-          isCollaborating={props.isCollaborating}
-          onSelect={() => props.onCollabDialogOpen()}
-        />
-      )}
+      {/* Collaboration trigger removed to simplify UI (permalinks only) */}
       <MainMenu.Item
         icon={usersIcon}
         onClick={() => setStudentDialog({ isOpen: true })}

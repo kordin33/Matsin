@@ -34,11 +34,19 @@ export const initDb = async () => {
         room_id TEXT NOT NULL,
         room_key TEXT NOT NULL,
         student_name TEXT,
+        teacher_id TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         last_accessed DATETIME,
         is_active INTEGER DEFAULT 1
       )
     `);
+
+    // Attempt to add missing teacher_id column for existing DBs (ignore error if exists)
+    try {
+      await dbRun(`ALTER TABLE permalinks ADD COLUMN teacher_id TEXT`);
+    } catch (e) {
+      // ignore if column already exists
+    }
 
     // Create indexes
     await dbRun(`
@@ -47,6 +55,24 @@ export const initDb = async () => {
     
     await dbRun(`
       CREATE INDEX IF NOT EXISTS idx_permalinks_room_id ON permalinks(room_id)
+    `);
+
+    await dbRun(`
+      CREATE INDEX IF NOT EXISTS idx_permalinks_teacher_id ON permalinks(teacher_id)
+    `);
+
+    // Drop legacy unique index on student_name to allow same names across teachers
+    try {
+      await dbRun(`DROP INDEX IF EXISTS idx_permalinks_student_name`);
+    } catch (e) {
+      // ignore
+    }
+
+    // Enforce uniqueness per teacher+student (when both provided)
+    await dbRun(`
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_permalinks_teacher_student
+      ON permalinks(teacher_id, student_name)
+      WHERE student_name IS NOT NULL AND teacher_id IS NOT NULL
     `);
 
     console.log("Database initialized successfully");
