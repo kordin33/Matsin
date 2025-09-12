@@ -18,6 +18,7 @@ import "./StudentLinkDialog.scss";
 // Przechowujemy trwałe linki dla studentów w localStorage
 const STUDENT_LINKS_KEY = "matsin:studentLinks";
 const TEACHER_KEY = "matsin:teacherKey";
+const TEACHER_TOKEN_KEY = "matsin:teacherToken";
 
 export const studentLinkDialogStateAtom = atom<
   { isOpen: false } | { isOpen: true }
@@ -75,6 +76,26 @@ export const StudentLinkDialog = ({
       return value;
     }
   });
+
+  const [teacherToken] = useState<string | null>(() => {
+    try {
+      const url = new URL(window.location.href);
+      const fromUrl = url.searchParams.get("t") || url.searchParams.get("token");
+      const fromStorage = localStorage.getItem(TEACHER_TOKEN_KEY);
+      const value = fromUrl || fromStorage || null;
+      if (value) {
+        localStorage.setItem(TEACHER_TOKEN_KEY, value);
+      }
+      if (fromUrl) {
+        url.searchParams.delete("t");
+        url.searchParams.delete("token");
+        window.history.replaceState({}, document.title, url.toString());
+      }
+      return value;
+    } catch {
+      return localStorage.getItem(TEACHER_TOKEN_KEY);
+    }
+  });
   const inputRef = useRef<HTMLInputElement>(null);
   const { onCopy, copyStatus } = useCopyStatus();
 
@@ -89,7 +110,9 @@ export const StudentLinkDialog = ({
     (async () => {
       try {
         if (!teacherId) return;
-        const list = await apiClient.listPermalinks(teacherId);
+        const list = teacherToken
+          ? await apiClient.listTeacherPermalinks(teacherId, teacherToken)
+          : await apiClient.listPermalinks(teacherId);
         const mapped: StudentLink[] = (list.items || []).map((it) => {
           const name = it.student_name || "Uczeń";
           const url = `${window.location.origin}${window.location.pathname}?permalink=${encodeURIComponent(it.permalink)}${name ? `&student=${encodeURIComponent(name)}` : ""}`;
@@ -135,6 +158,7 @@ export const StudentLinkDialog = ({
         room_key: roomKey,
         student_name: name,
         teacher_id: teacherId,
+        teacher_token: teacherToken || undefined,
       });
       const url = `${window.location.origin}${window.location.pathname}?permalink=${encodeURIComponent(
         permalink,
@@ -185,7 +209,11 @@ export const StudentLinkDialog = ({
     const link = studentLinks.find((l) => l.id === linkId);
     try {
       if (link?.permalink) {
-        await apiClient.deletePermalink(link.permalink, teacherId);
+        if (teacherToken) {
+          await apiClient.deleteTeacherPermalink(teacherId, link.permalink, teacherToken);
+        } else {
+          await apiClient.deletePermalink(link.permalink, teacherId);
+        }
       }
     } catch (e) {
       // ignore backend failure; proceed with local removal

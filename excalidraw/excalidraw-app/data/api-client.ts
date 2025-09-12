@@ -20,6 +20,7 @@ export interface PermalinkCreateRequest {
   room_key: string;
   student_name?: string;
   teacher_id?: string;
+  teacher_token?: string;
 }
 
 export interface PermalinkResponse {
@@ -130,6 +131,19 @@ class ApiClient {
   async deletePermalink(permalink: string, teacherId: string): Promise<{ ok: boolean }> {
     const params = new URLSearchParams({ teacher_id: teacherId });
     return this.request<{ ok: boolean }>(`/api/permalinks/${encodeURIComponent(permalink)}?${params.toString()}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Teacher-protected endpoints (token-aware)
+  async listTeacherPermalinks(teacherId: string, token: string): Promise<TeacherPermalinkList> {
+    const params = new URLSearchParams({ token });
+    return this.request<TeacherPermalinkList>(`/api/teachers/${encodeURIComponent(teacherId)}/permalinks?${params.toString()}`);
+  }
+
+  async deleteTeacherPermalink(teacherId: string, permalink: string, token: string): Promise<{ ok: boolean }> {
+    const params = new URLSearchParams({ token });
+    return this.request<{ ok: boolean }>(`/api/teachers/${encodeURIComponent(teacherId)}/permalinks/${encodeURIComponent(permalink)}?${params.toString()}`, {
       method: 'DELETE',
     });
   }

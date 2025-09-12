@@ -41,6 +41,19 @@ export const initDb = async () => {
       )
     `);
 
+    // Create teachers table
+    await dbRun(`
+      CREATE TABLE IF NOT EXISTS teachers (
+        teacher_id TEXT PRIMARY KEY,
+        name TEXT,
+        email TEXT,
+        token TEXT NOT NULL UNIQUE,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        last_accessed DATETIME,
+        is_active INTEGER DEFAULT 1
+      )
+    `);
+
     // Attempt to add missing teacher_id column for existing DBs (ignore error if exists)
     try {
       await dbRun(`ALTER TABLE permalinks ADD COLUMN teacher_id TEXT`);

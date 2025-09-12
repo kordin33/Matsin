@@ -1,6 +1,6 @@
 import type { Router } from "express";
 import express from "express";
-import { dbRun, dbGet } from "./db";
+import { dbRun, dbGet, dbAll } from "./db";
 
 const router: Router = express.Router();
 
@@ -108,6 +108,30 @@ function generatePermalink(): string {
   return Math.random().toString(36).slice(2, 10);
 }
 
+function generateId(len = 10): string {
+  return Math.random().toString(36).slice(2, 2 + len);
+}
+
+const isAdmin = (req: express.Request) => {
+  const token = req.header("x-admin-token");
+  return token && process.env.ADMIN_TOKEN && token === process.env.ADMIN_TOKEN;
+};
+
+const getTeacherById = async (teacherId: string) => {
+  return dbGet(
+    `SELECT * FROM teachers WHERE teacher_id = ? AND is_active = 1 LIMIT 1`,
+    [teacherId],
+  );
+};
+
+const assertTeacherToken = async (
+  teacherId: string,
+  token: string,
+): Promise<boolean> => {
+  const t = await getTeacherById(teacherId);
+  return !!t && t.token === token;
+};
+
 router.post("/api/permalinks", async (req, res) => {
   const { room_id, room_key, student_name, teacher_id } = req.body || {};
   if (
@@ -197,6 +221,120 @@ router.delete("/api/permalinks/:permalink", async (req, res) => {
     return res.json({ ok: true });
   } catch (err) {
     console.error("DELETE /api/permalinks/:permalink error", err);
+    return res.status(500).json({ error: "internal_error" });
+  }
+});
+
+// Teacher-protected endpoints
+router.get("/api/teachers/:teacherId/permalinks", async (req, res) => {
+  const { teacherId } = req.params as { teacherId: string };
+  const { token } = req.query as { token?: string };
+  if (!token) return res.status(403).json({ error: "forbidden" });
+  try {
+    const ok = await assertTeacherToken(teacherId, token);
+    if (!ok) return res.status(403).json({ error: "forbidden" });
+    const rows = await dbAll(
+      `SELECT permalink, room_id, room_key, student_name, created_at, last_accessed, is_active
+       FROM permalinks WHERE teacher_id = ? AND is_active = 1 ORDER BY created_at DESC`,
+      [teacherId],
+    );
+    return res.json({ items: rows });
+  } catch (err) {
+    console.error("GET /api/teachers/:teacherId/permalinks error", err);
+    return res.status(500).json({ error: "internal_error" });
+  }
+});
+
+router.delete(
+  "/api/teachers/:teacherId/permalinks/:permalink",
+  async (req, res) => {
+    const { teacherId, permalink } = req.params as {
+      teacherId: string;
+      permalink: string;
+    };
+    const { token } = req.query as { token?: string };
+    if (!token) return res.status(403).json({ error: "forbidden" });
+    try {
+      const ok = await assertTeacherToken(teacherId, token);
+      if (!ok) return res.status(403).json({ error: "forbidden" });
+      await dbRun(
+        `UPDATE permalinks SET is_active = 0 WHERE permalink = ? AND teacher_id = ?`,
+        [permalink, teacherId],
+      );
+      return res.json({ ok: true });
+    } catch (err) {
+      console.error(
+        "DELETE /api/teachers/:teacherId/permalinks/:permalink error",
+        err,
+      );
+      return res.status(500).json({ error: "internal_error" });
+    }
+  },
+);
+
+// Admin endpoints
+router.post("/api/admin/teachers", async (req, res) => {
+  if (!isAdmin(req)) return res.status(403).json({ error: "forbidden" });
+  const { name, email } = req.body || {};
+  if (typeof name !== "string") return res.status(400).json({ error: "invalid_payload" });
+  try {
+    const teacher_id = generateId(10);
+    const token = generateId(16);
+    await dbRun(
+      `INSERT INTO teachers (teacher_id, name, email, token) VALUES (?, ?, ?, ?)`
+        ,
+      [teacher_id, name || null, email || null, token],
+    );
+    return res.json({ teacher_id, token });
+  } catch (err) {
+    console.error("POST /api/admin/teachers error", err);
+    return res.status(500).json({ error: "internal_error" });
+  }
+});
+
+router.post("/api/admin/teachers/upload", async (req, res) => {
+  if (!isAdmin(req)) return res.status(403).json({ error: "forbidden" });
+  const { csv } = req.body || {};
+  if (typeof csv !== "string") return res.status(400).json({ error: "invalid_payload" });
+  try {
+    const lines = csv.split(/\r?\n/).filter((l: string) => l.trim().length > 0);
+    if (!lines.length) return res.json({ items: [] });
+    // support optional header
+    let start = 0;
+    let hasHeader = false;
+    if (/name|email/i.test(lines[0])) {
+      hasHeader = true;
+      start = 1;
+    }
+    const results: any[] = [];
+    for (let i = start; i < lines.length; i++) {
+      const parts = lines[i].split(",").map((s: string) => s.trim());
+      const [name, email] = parts;
+      const teacher_id = generateId(10);
+      const token = generateId(16);
+      await dbRun(
+        `INSERT INTO teachers (teacher_id, name, email, token) VALUES (?, ?, ?, ?)`
+          ,
+        [teacher_id, name || null, email || null, token],
+      );
+      results.push({ teacher_id, token, name, email });
+    }
+    return res.json({ items: results });
+  } catch (err) {
+    console.error("POST /api/admin/teachers/upload error", err);
+    return res.status(500).json({ error: "internal_error" });
+  }
+});
+
+router.get("/api/admin/teachers", async (req, res) => {
+  if (!isAdmin(req)) return res.status(403).json({ error: "forbidden" });
+  try {
+    const rows = await dbAll(
+      `SELECT teacher_id, name, email, token, created_at, last_accessed, is_active FROM teachers ORDER BY created_at DESC`,
+    );
+    return res.json({ items: rows });
+  } catch (err) {
+    console.error("GET /api/admin/teachers error", err);
     return res.status(500).json({ error: "internal_error" });
   }
 });
