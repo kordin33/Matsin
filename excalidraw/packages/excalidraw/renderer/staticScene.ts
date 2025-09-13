@@ -244,6 +244,10 @@ const _renderStaticScene = ({
   // Najpierw rysujemy siatkę na nieskalowanym kontekście, przekazując zoom/scroll,
   // aby siatka była zakotwiczona w world space (jak w Idroo)
   if (renderGrid && appState.gridModeEnabled) {
+    const z = appState.zoom.value || 1;
+    // keep grid spacing constant in screen px (like Miro/Idroo),
+    // convert desired px spacing to world units by dividing by zoom
+    const worldGridSize = Math.max(1, appState.gridSize / z);
     renderInfiniteGrid(
       context,
       normalizedWidth,
@@ -253,10 +257,12 @@ const _renderStaticScene = ({
         scrollY: appState.scrollY,
         zoom: appState.zoom,
         style: GridStyle.LINES,
-        size: appState.gridSize,
+        size: worldGridSize,
         color: appState.theme === "dark" ? "#404040" : "#4a4a4a",
         opacity: 0.6,
+        lineWidth: Math.max(1 / z, 0.5),
         majorGridMultiplier: Math.max(1, appState.gridStep),
+        majorLineWidth: Math.max(1.5 / z, 0.75),
         majorColor: appState.theme === "dark" ? "#606060" : "#6a6a6a",
       }
     );

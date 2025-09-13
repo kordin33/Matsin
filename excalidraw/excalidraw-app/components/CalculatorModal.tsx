@@ -17,13 +17,26 @@ const CalculatorModal: React.FC<CalculatorModalProps> = ({ visible, onUpdateVisi
   const [dragging, setDragging] = useState(false);
   const dragOffset = useRef({ x: 0, y: 0 });
   const winRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+
+  const BASE_WIDTH = 380; // must match CSS
+
+  const measureAndScale = () => {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const rect = winRef.current?.getBoundingClientRect();
+    const assumedHeight = rect?.height || 520;
+    const s = Math.min(1, (vw - 24) / BASE_WIDTH, (vh - 24) / assumedHeight);
+    setScale(Math.max(0.6, s));
+  };
 
   useEffect(() => {
     if (visible) {
       // center roughly on open
+      measureAndScale();
       const vw = window.innerWidth;
       const vh = window.innerHeight;
-      const width = 380;
+      const width = BASE_WIDTH;
       const height = 460;
       setPosition({ x: Math.max(16, (vw - width) / 2), y: Math.max(16, (vh - height) / 3) });
     }
@@ -35,7 +48,11 @@ const CalculatorModal: React.FC<CalculatorModalProps> = ({ visible, onUpdateVisi
     };
     if (visible) {
       document.addEventListener('keydown', onKey);
-      return () => document.removeEventListener('keydown', onKey);
+      window.addEventListener('resize', measureAndScale);
+      return () => {
+        document.removeEventListener('keydown', onKey);
+        window.removeEventListener('resize', measureAndScale);
+      };
     }
   }, [visible, onUpdateVisible]);
 
@@ -94,7 +111,7 @@ const CalculatorModal: React.FC<CalculatorModalProps> = ({ visible, onUpdateVisi
     <div
       className={`calc-window calculator-modal`}
       ref={winRef}
-      style={{ transform: `translate(${position.x}px, ${position.y}px)` }}
+      style={{ transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`, transformOrigin: 'top left' }}
       role="dialog"
       aria-label={t('buttons.calculator') || 'Calculator'}
     >
