@@ -1,7 +1,20 @@
 .excalidraw {
+  /* Gradient + glass variables */
+  --glass-blur: 20px;
+  --glass-saturation: 180%;
+  --glass-radius: 16px;
+  --glass-border: 1px solid rgba(255, 255, 255, 0.32);
+  --glass-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255,255,255,0.25);
+  --grad-start: rgba(255, 209, 220, 0.50); /* light pink */
+  --grad-end: rgba(249, 161, 181, 0.35);
+  --icon-color: #d46a85;
+
   --color-primary-contrast-offset: #625ee0; // to offset Chubb illusion
 
   &.theme--dark {
+    --grad-start: rgba(255, 107, 107, 0.28); /* subtle red */
+    --grad-end: rgba(255, 61, 61, 0.18);
+    --icon-color: #ff6b6b;
     --color-primary-contrast-offset: #726dff; // to offset Chubb illusion
   }
 
@@ -38,18 +51,14 @@
   .excalidraw .dropdown-menu-container,
   .dropdown-menu .dropdown-menu-container,
   .dropdown-menu-container {
-    background: linear-gradient(135deg, 
-      rgba(255, 255, 255, 0.15) 0%, 
-      rgba(255, 255, 255, 0.05) 100%) !important;
-    backdrop-filter: blur(25px) saturate(200%) !important;
-    -webkit-backdrop-filter: blur(25px) saturate(200%) !important;
-    border: 1px solid rgba(255, 255, 255, 0.3) !important;
-    box-shadow: 
-      0 8px 32px rgba(0, 0, 0, 0.12),
-      0 2px 8px rgba(0, 0, 0, 0.08),
-      inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
-    border-radius: 16px !important;
-    position: static !important; /* Prevent position interference */
+    background: linear-gradient(135deg, var(--grad-start) 0%, var(--grad-end) 100%) !important;
+    backdrop-filter: blur(var(--glass-blur)) #{'saturate(var(--glass-saturation))'} !important;
+    -webkit-backdrop-filter: blur(var(--glass-blur)) #{'saturate(var(--glass-saturation))'} !important;
+    border: var(--glass-border) !important;
+    box-shadow: var(--glass-shadow) !important;
+    border-radius: var(--glass-radius) !important;
+    /* keep absolute positioning so popovers don't take layout space */
+    position: absolute !important;
     
     /* Add subtle inner glow */
     &::before {
@@ -59,10 +68,8 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: linear-gradient(135deg, 
-        rgba(255, 255, 255, 0.1) 0%, 
-        transparent 50%);
-      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0%, transparent 50%);
+      border-radius: var(--glass-radius);
       pointer-events: none;
     }
     
@@ -84,17 +91,12 @@
   /* Liquid Glass Effect ONLY for dropdown menu Island components */
   .excalidraw .dropdown-menu .Island,
   .dropdown-menu .Island {
-    background: linear-gradient(135deg, 
-      rgba(255, 255, 255, 0.15) 0%, 
-      rgba(255, 255, 255, 0.05) 100%) !important;
-    backdrop-filter: blur(25px) saturate(200%) !important;
-    -webkit-backdrop-filter: blur(25px) saturate(200%) !important;
-    border: 1px solid rgba(255, 255, 255, 0.3) !important;
-    box-shadow: 
-      0 8px 32px rgba(0, 0, 0, 0.12),
-      0 2px 8px rgba(0, 0, 0, 0.08),
-      inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
-    border-radius: 16px !important;
+    background: linear-gradient(135deg, var(--grad-start) 0%, var(--grad-end) 100%) !important;
+    backdrop-filter: blur(var(--glass-blur)) #{'saturate(var(--glass-saturation))'} !important;
+    -webkit-backdrop-filter: blur(var(--glass-blur)) #{'saturate(var(--glass-saturation))'} !important;
+    border: var(--glass-border) !important;
+    box-shadow: var(--glass-shadow) !important;
+    border-radius: var(--glass-radius) !important;
     
     /* Add subtle inner glow */
     &::before {
@@ -104,10 +106,8 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: linear-gradient(135deg, 
-        rgba(255, 255, 255, 0.1) 0%, 
-        transparent 50%);
-      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0%, transparent 50%);
+      border-radius: var(--glass-radius);
       pointer-events: none;
       z-index: 1;
     }
@@ -144,6 +144,47 @@
     z-index: 6;
     white-space: pre;
   }
+}
+
+/* Glass treatment for common surfaces (toolbars, islands, dialogs, bottom controls) */
+.excalidraw .Island,
+.excalidraw .Dialog,
+.excalidraw .App-toolbar,
+.excalidraw .App-bottom-controls {
+  background: linear-gradient(135deg, var(--grad-start) 0%, var(--grad-end) 100%) !important;
+  backdrop-filter: blur(var(--glass-blur)) #{'saturate(var(--glass-saturation))'} !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) #{'saturate(var(--glass-saturation))'} !important;
+  border: var(--glass-border) !important;
+  box-shadow: var(--glass-shadow) !important;
+  border-radius: var(--glass-radius) !important;
+}
+
+/* ensure toolbar island gets the treatment even if component styles override */
+.excalidraw .Island.App-toolbar,
+.excalidraw .App-bottom-controls {
+  background: linear-gradient(135deg, var(--grad-start) 0%, var(--grad-end) 100%) !important;
+}
+
+/* Keep native ToolIcon visuals to avoid misalignment/distortion */
+.excalidraw .App-toolbar .ToolIcon .ToolIcon__icon {
+  background-color: transparent !important;
+  border-radius: var(--border-radius-lg) !important;
+}
+
+/* Remove forced SVG tinting and heavy shadows that caused visual glitches */
+/* Previously we were overriding fill/stroke with !important and adding drop-shadows on SVGs.
+   Rely on component-provided color states instead for proper contrast & disabled/active styling. */
+.excalidraw .App-toolbar .ToolIcon .ToolIcon__icon svg,
+.excalidraw .App-toolbar .dropdown-menu .dropdown-menu-item__icon svg,
+.excalidraw .App-toolbar .footer-center svg,
+.excalidraw .App-toolbar .top-right-ui svg {
+  filter: none !important;
+}
+
+/* Keep hover/active subtle without affecting layout */
+.excalidraw .App-toolbar .ToolIcon.ToolIcon_type_button:hover .ToolIcon__icon,
+.excalidraw .App-toolbar .ToolIcon.ToolIcon_type_button:focus .ToolIcon__icon {
+  /* let the base styles handle background; no extra drop-shadow */
 }
 
 .excalidraw-app.is-collaborating {

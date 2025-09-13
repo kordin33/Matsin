@@ -7,9 +7,9 @@ dotenv.config();
 const db = new sqlite3.Database(process.env.DATABASE_PATH || "./excalidraw.db");
 
 // Promisify database methods
-const dbRun = promisify(db.run.bind(db));
-const dbGet = promisify(db.get.bind(db));
-const dbAll = promisify(db.all.bind(db));
+const dbRun = promisify(db.run.bind(db)) as (...args: any[]) => Promise<any>;
+const dbGet = promisify(db.get.bind(db)) as (...args: any[]) => Promise<any>;
+const dbAll = promisify(db.all.bind(db)) as (...args: any[]) => Promise<any>;
 
 export { db, dbRun, dbGet, dbAll };
 

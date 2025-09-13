@@ -11,7 +11,11 @@
 }
 
 .StudentLinkDialog__create {
-  background: var(--island-bg-color);
+  background: linear-gradient(135deg, var(--grad-start), var(--grad-end));
+  backdrop-filter: blur(var(--glass-blur)) #{'saturate(var(--glass-saturation))'};
+  -webkit-backdrop-filter: blur(var(--glass-blur)) #{'saturate(var(--glass-saturation))'};
+  border: var(--glass-border);
+  box-shadow: var(--glass-shadow);
   border-radius: 12px;
   padding: 12px;
   margin-bottom: 16px;
@@ -24,7 +28,11 @@
 }
 
 .StudentLinkDialog__list {
-  background: var(--island-bg-color);
+  background: linear-gradient(135deg, var(--grad-start), var(--grad-end));
+  backdrop-filter: blur(var(--glass-blur)) #{'saturate(var(--glass-saturation))'};
+  -webkit-backdrop-filter: blur(var(--glass-blur)) #{'saturate(var(--glass-saturation))'};
+  border: var(--glass-border);
+  box-shadow: var(--glass-shadow);
   border-radius: 12px;
   padding: 12px;
 }
@@ -39,9 +47,24 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: var(--button-bg-color);
+  background: rgba(255,255,255,0.25);
   border-radius: 8px;
   padding: 10px;
+}
+
+.StudentLinkDialog__teacher {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 10px 0 16px;
+  background: linear-gradient(135deg, var(--grad-start), var(--grad-end));
+  backdrop-filter: blur(var(--glass-blur)) #{'saturate(var(--glass-saturation))'};
+  -webkit-backdrop-filter: blur(var(--glass-blur)) #{'saturate(var(--glass-saturation))'};
+  border: var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  border-radius: 10px;
+  padding: 10px 12px;
 }
 
 .StudentLinkDialog__student__info {
