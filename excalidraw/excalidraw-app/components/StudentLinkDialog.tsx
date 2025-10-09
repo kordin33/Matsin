@@ -2,7 +2,6 @@ import { Dialog } from "@excalidraw/excalidraw/components/Dialog";
 import { FilledButton } from "@excalidraw/excalidraw/components/FilledButton";
 import { TextField } from "@excalidraw/excalidraw/components/TextField";
 import { copyIcon, LinkIcon, usersIcon } from "@excalidraw/excalidraw/components/icons";
-import { useI18n } from "@excalidraw/excalidraw/i18n";
 import { KEYS } from "@excalidraw/common";
 import { useState, useRef, useEffect } from "react";
 import { copyTextToSystemClipboard } from "@excalidraw/excalidraw/clipboard";
@@ -15,7 +14,6 @@ import type { CollabAPI } from "../collab/Collab";
 
 import "./StudentLinkDialog.scss";
 
-// Przechowujemy trwałe linki dla studentów w localStorage
 const STUDENT_LINKS_KEY = "matsin:studentLinks";
 const TEACHER_KEY = "matsin:teacherKey";
 const TEACHER_TOKEN_KEY = "matsin:teacherToken";
@@ -54,7 +52,6 @@ export const StudentLinkDialog = ({
   collabAPI: CollabAPI | null;
   handleClose: () => void;
 }) => {
-  const { t } = useI18n();
   const [studentLinks, setStudentLinks] = useState<StudentLink[]>(loadStudentLinks);
   const [newStudentName, setNewStudentName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
@@ -96,63 +93,69 @@ export const StudentLinkDialog = ({
       return localStorage.getItem(TEACHER_TOKEN_KEY);
     }
   });
+
   const inputRef = useRef<HTMLInputElement>(null);
   const { onCopy, copyStatus } = useCopyStatus();
 
   useEffect(() => {
-    if (inputRef.current) {
-      inputRef.current.focus();
-    }
+    inputRef.current?.focus();
   }, []);
 
-  // Load server-side student links for this teacher on open
   useEffect(() => {
     (async () => {
       try {
-        if (!teacherId) return;
+        if (!teacherId) {
+          return;
+        }
         const list = teacherToken
           ? await apiClient.listTeacherPermalinks(teacherId, teacherToken)
           : await apiClient.listPermalinks(teacherId);
-        const mapped: StudentLink[] = (list.items || []).map((it) => {
-          const name = it.student_name || "Uczeń";
-          const url = `${window.location.origin}${window.location.pathname}?permalink=${encodeURIComponent(it.permalink)}${name ? `&student=${encodeURIComponent(name)}` : ""}`;
+        const mapped: StudentLink[] = (list.items || []).map((item) => {
+          const name = item.student_name || "Ucze\u0144";
+          const url = `${window.location.origin}${window.location.pathname}?permalink=${encodeURIComponent(
+            item.permalink,
+          )}${name ? `&student=${encodeURIComponent(name)}` : ""}`;
           return {
-            id: it.permalink,
+            id: item.permalink,
             studentName: name,
-            roomId: it.room_id,
-            roomKey: it.room_key,
-            permalink: it.permalink,
+            roomId: item.room_id,
+            roomKey: item.room_key,
+            permalink: item.permalink,
             url,
-            createdAt: new Date(it.created_at).toLocaleDateString("pl-PL"),
+            createdAt: new Date(item.created_at).toLocaleDateString("pl-PL"),
           };
         });
+
         if (mapped.length) {
           setStudentLinks(mapped);
           saveStudentLinks(mapped);
         }
-      } catch (e) {
-        // ignore
+      } catch (error) {
+        console.error("Failed to fetch student links", error);
       }
     })();
   }, [teacherId]);
 
   const createStudentLink = async () => {
-    if (!newStudentName.trim()) return;
+    if (!newStudentName.trim()) {
+      return;
+    }
 
     setIsCreating(true);
     try {
       const name = newStudentName.trim();
       const exists = studentLinks.some(
-        (s) => s.studentName.toLowerCase() === name.toLowerCase(),
+        (student) => student.studentName.toLowerCase() === name.toLowerCase(),
       );
+
       if (exists) {
         alert(
-          `Link dla ucznia "${name}" już istnieje. Użyj istniejącego linku lub usuń go, aby wygenerować nowy.`,
+          `Link dla ucznia "${name}" ju\u017c istnieje. U\u017cyj istniej\u0105cego linku lub usu\u0144 go, aby stworzy\u0107 nowy.`,
         );
         return;
       }
+
       const { roomId, roomKey } = await generateCollaborationLinkData();
-      // Create server-side permalink for stable sharing
       const { permalink } = await apiClient.createPermalink({
         room_id: roomId,
         room_key: roomKey,
@@ -160,6 +163,7 @@ export const StudentLinkDialog = ({
         teacher_id: teacherId,
         teacher_token: teacherToken || undefined,
       });
+
       const url = `${window.location.origin}${window.location.pathname}?permalink=${encodeURIComponent(
         permalink,
       )}&student=${encodeURIComponent(name)}`;
@@ -179,7 +183,7 @@ export const StudentLinkDialog = ({
       saveStudentLinks(updatedLinks);
       setNewStudentName("");
     } catch (error) {
-      console.error("Błąd podczas tworzenia linku studenta:", error);
+      console.error("Failed to create student link", error);
     } finally {
       setIsCreating(false);
     }
@@ -190,23 +194,25 @@ export const StudentLinkDialog = ({
       await copyTextToSystemClipboard(link);
       onCopy();
     } catch (error) {
-      console.error("Nie udało się skopiować linku:", error);
+      console.error("Unable to copy link", error);
     }
   };
 
   const joinStudent = async (roomId: string, roomKey: string) => {
-    if (!collabAPI) return;
+    if (!collabAPI) {
+      return;
+    }
 
     try {
       await collabAPI.startCollaboration({ roomId, roomKey });
       handleClose();
     } catch (error) {
-      console.error("Błąd podczas dołączania do pokoju studenta:", error);
+      console.error("Unable to join student room", error);
     }
   };
 
   const deleteStudentLink = async (linkId: string) => {
-    const link = studentLinks.find((l) => l.id === linkId);
+    const link = studentLinks.find((item) => item.id === linkId);
     try {
       if (link?.permalink) {
         if (teacherToken) {
@@ -215,42 +221,54 @@ export const StudentLinkDialog = ({
           await apiClient.deletePermalink(link.permalink, teacherId);
         }
       }
-    } catch (e) {
-      // ignore backend failure; proceed with local removal
+    } catch (error) {
+      console.error("Unable to delete student link", error);
     }
-    const updatedLinks = studentLinks.filter((l) => l.id !== linkId);
+
+    const updatedLinks = studentLinks.filter((item) => item.id !== linkId);
     setStudentLinks(updatedLinks);
     saveStudentLinks(updatedLinks);
   };
 
-  return (
-    <Dialog size="small" onCloseRequest={handleClose} title={false}>
-      <div className="StudentLinkDialog">
-        <h2 className="StudentLinkDialog__title">
-          {usersIcon}
-          Zarządzanie uczniami
-        </h2>
+  const manageLink = `${window.location.origin}${window.location.pathname}?teacher=${teacherId}`;
+  const hasStudents = studentLinks.length > 0;
+  const studentCountLabel = studentLinks.length.toString().padStart(2, "0");
 
-        <div className="StudentLinkDialog__teacher">
-          <small>
-            Twój link zarządzania: {`${window.location.origin}${window.location.pathname}?teacher=${teacherId}`}
-          </small>
+  return (
+    <Dialog size="medium" onCloseRequest={handleClose} title={false}>
+      <div className="StudentLinkDialog">
+        <header className="StudentLinkDialog__header">
+          <span className="StudentLinkDialog__headerIcon">{usersIcon}</span>
+          <div className="StudentLinkDialog__headerCopy">
+            <h2>Panel uczni\u00f3w</h2>
+            <p>Zarz\u0105dzaj sta\u0142ymi zaproszeniami i do\u0142\u0105czaj do tablic uczni\u00f3w w kilka sekund.</p>
+          </div>
+        </header>
+
+        <section className="StudentLinkDialog__card StudentLinkDialog__teacher">
+          <div className="StudentLinkDialog__cardBody">
+            <span className="StudentLinkDialog__label">Link nauczyciela</span>
+            <strong className="StudentLinkDialog__link">{manageLink}</strong>
+          </div>
           <FilledButton
             size="medium"
             variant="outlined"
-            label="Kopiuj link nauczyciela"
+            label="Kopiuj link"
             icon={copyIcon}
             status={copyStatus}
-            onClick={() => copyStudentLink(`${window.location.origin}${window.location.pathname}?teacher=${teacherId}`)}
+            onClick={() => copyStudentLink(manageLink)}
           />
-        </div>
+        </section>
 
-        <div className="StudentLinkDialog__create">
-          <h3>Utwórz trwały link dla ucznia</h3>
-          <div className="StudentLinkDialog__create__form">
+        <section className="StudentLinkDialog__card StudentLinkDialog__create">
+          <div className="StudentLinkDialog__cardHeader">
+            <h3>Dodaj ucznia</h3>
+            <p>Podaj imi\u0119 i nazwisko, aby wygenerowa\u0107 sta\u0142y link.</p>
+          </div>
+          <div className="StudentLinkDialog__form">
             <TextField
               ref={inputRef}
-              placeholder="Imię i nazwisko ucznia"
+              placeholder="Imi\u0119 i nazwisko ucznia"
               value={newStudentName}
               onChange={setNewStudentName}
               onKeyDown={(event) => {
@@ -261,38 +279,37 @@ export const StudentLinkDialog = ({
             />
             <FilledButton
               size="large"
-              label={isCreating ? "Tworzenie..." : "Utwórz link"}
+              label={isCreating ? "Tworzenie..." : "Utw\u00f3rz link"}
               icon={LinkIcon}
               onClick={createStudentLink}
             />
           </div>
-        </div>
+        </section>
 
-        <div className="StudentLinkDialog__list">
-          <h3>Istniejące linki uczniów ({studentLinks.length})</h3>
-          {studentLinks.length === 0 ? (
-            <p className="StudentLinkDialog__empty">
-              Nie masz jeszcze żadnych linków dla uczniów. Utwórz pierwszy!
-            </p>
-          ) : (
-            <div className="StudentLinkDialog__students">
+        <section className="StudentLinkDialog__card StudentLinkDialog__list">
+          <div className="StudentLinkDialog__cardHeader StudentLinkDialog__listHeader">
+            <h3>Zapisane linki</h3>
+            <span className="StudentLinkDialog__counter">{studentCountLabel}</span>
+          </div>
+          {hasStudents ? (
+            <ul className="StudentLinkDialog__students">
               {studentLinks.map((link) => (
-                <div key={link.id} className="StudentLinkDialog__student">
-                  <div className="StudentLinkDialog__student__info">
-                    <strong>{link.studentName}</strong>
-                    <small>Utworzono: {link.createdAt}</small>
+                <li key={link.id} className="StudentLinkDialog__student">
+                  <div className="StudentLinkDialog__studentMeta">
+                    <span className="StudentLinkDialog__studentName">{link.studentName}</span>
+                    <span className="StudentLinkDialog__studentDate">Utworzono {link.createdAt}</span>
                   </div>
-                  <div className="StudentLinkDialog__student__actions">
+                  <div className="StudentLinkDialog__studentActions">
                     <FilledButton
                       size="medium"
                       variant="outlined"
-                      label="Dołącz"
+                      label="Do\u0142\u0105cz"
                       onClick={() => joinStudent(link.roomId, link.roomKey)}
                     />
                     <FilledButton
                       size="medium"
                       variant="outlined"
-                      label="Kopiuj"
+                      label="Kopiuj link"
                       icon={copyIcon}
                       status={copyStatus}
                       onClick={() => copyStudentLink(link.url)}
@@ -301,39 +318,32 @@ export const StudentLinkDialog = ({
                       size="medium"
                       variant="outlined"
                       color="danger"
-                      label="Usuń"
+                      label="Usu\u0144"
                       onClick={() => {
-                        if (
-                          confirm(
-                            `Czy na pewno chcesz usunąć link dla ${link.studentName}?`,
-                          )
-                        ) {
+                        if (confirm(`Czy usun\u0105\u0107 link dla ${link.studentName}?`)) {
                           deleteStudentLink(link.id);
                         }
                       }}
                     />
                   </div>
-                </div>
+                </li>
               ))}
+            </ul>
+          ) : (
+            <div className="StudentLinkDialog__empty">
+              <p>Nie masz jeszcze link\u00f3w uczni\u00f3w. Dodaj pierwszego, aby zobaczy\u0107 go na li\u015bcie.</p>
             </div>
           )}
-        </div>
+        </section>
 
-        <div className="StudentLinkDialog__footer">
-          <p className="StudentLinkDialog__info">
-            <strong>Jak to działa:</strong>
-            <br />
-            1. Utwórz trwały link dla każdego ucznia
-            <br />
-            2. Wyślij uczniowi jego unikalny link
-            <br />
-            3. Uczeń zawsze używa tego samego linku
-            <br />
-            4. Ty jako nauczyciel możesz dołączać do dowolnej tablicy ucznia
-            <br />
-            5. Stan tablicy jest automatycznie zapisywany
-          </p>
-        </div>
+        <footer className="StudentLinkDialog__footer">
+          <h4>Jak to dzia\u0142a</h4>
+          <ol>
+            <li>Tw\u00f3rz sta\u0142y link dla ka\u017cdego ucznia.</li>
+            <li>Przeka\u017c link uczniowi, aby zawsze wraca\u0142 do swojej tablicy.</li>
+            <li>Do\u0142\u0105czaj do pokoju ucznia zawsze, gdy chcesz \u015bledzi\u0107 jego prac\u0119.</li>
+          </ol>
+        </footer>
       </div>
     </Dialog>
   );

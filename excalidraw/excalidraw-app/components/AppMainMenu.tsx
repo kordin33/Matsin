@@ -31,7 +31,15 @@ export const AppMainMenu: React.FC<{
     <MainMenu>
 
       <MainMenu.DefaultItems.SaveAsImage />
-      {/* Collaboration trigger removed to simplify UI (permalinks only) */}
+      {/* Tymczasowa współpraca na żywo (bez permalinka) */}
+      <MainMenu.Item
+        icon={usersIcon}
+        onClick={props.onCollabDialogOpen}
+      >
+        Współpraca (tymczasowa)
+      </MainMenu.Item>
+
+      {/* Stałe linki dla uczniów */}
       <MainMenu.Item
         icon={usersIcon}
         onClick={() => setStudentDialog({ isOpen: true })}

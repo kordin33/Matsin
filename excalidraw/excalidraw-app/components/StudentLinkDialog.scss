@@ -1,88 +1,233 @@
 .StudentLinkDialog {
-  padding: 16px;
-  min-width: 560px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 620px;
+  padding: 24px;
+  color: var(--color-text, #111);
 }
 
-.StudentLinkDialog__title {
+.StudentLinkDialog__header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin: 0 0 12px;
+  gap: 16px;
 }
 
+.StudentLinkDialog__headerIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  background: var(--color-primary, #4f46e5);
+  color: var(--color-surface, #fff);
+  box-shadow: 0 12px 24px rgba(79, 70, 229, 0.25);
+}
+
+.StudentLinkDialog__headerCopy h2 {
+  margin: 0 0 4px;
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.StudentLinkDialog__headerCopy p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--color-text-muted, rgba(17, 17, 17, 0.7));
+}
+
+.StudentLinkDialog__card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  border: 1px solid var(--color-gray-20, rgba(17, 24, 39, 0.08));
+  border-radius: 16px;
+  background: var(--color-gray-95, rgba(17, 24, 39, 0.04));
+  backdrop-filter: saturate(180%) blur(16px);
+}
+
+.StudentLinkDialog__teacher,
 .StudentLinkDialog__create {
-  background: linear-gradient(135deg, var(--grad-start), var(--grad-end));
-  backdrop-filter: blur(var(--glass-blur)) #{'saturate(var(--glass-saturation))'};
-  -webkit-backdrop-filter: blur(var(--glass-blur)) #{'saturate(var(--glass-saturation))'};
-  border: var(--glass-border);
-  box-shadow: var(--glass-shadow);
-  border-radius: 12px;
-  padding: 12px;
-  margin-bottom: 16px;
-}
-
-.StudentLinkDialog__create__form {
-  display: flex;
-  gap: 8px;
   align-items: center;
 }
 
-.StudentLinkDialog__list {
-  background: linear-gradient(135deg, var(--grad-start), var(--grad-end));
-  backdrop-filter: blur(var(--glass-blur)) #{'saturate(var(--glass-saturation))'};
-  -webkit-backdrop-filter: blur(var(--glass-blur)) #{'saturate(var(--glass-saturation))'};
-  border: var(--glass-border);
-  box-shadow: var(--glass-shadow);
-  border-radius: 12px;
-  padding: 12px;
+.StudentLinkDialog__cardBody {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.StudentLinkDialog__label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted, rgba(17, 17, 17, 0.6));
+}
+
+.StudentLinkDialog__link {
+  word-break: break-all;
+  font-family: "JetBrains Mono", "Fira Code", monospace;
+  font-size: 0.85rem;
+  color: var(--color-primary, #4f46e5);
+}
+
+.StudentLinkDialog__cardHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.StudentLinkDialog__cardHeader h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.StudentLinkDialog__cardHeader p {
+  margin: 0;
+  color: var(--color-text-muted, rgba(17, 17, 17, 0.65));
+  font-size: 0.9rem;
+}
+
+.StudentLinkDialog__form {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
 }
 
 .StudentLinkDialog__students {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  width: 100%;
 }
 
 .StudentLinkDialog__student {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: rgba(255,255,255,0.25);
-  border-radius: 8px;
-  padding: 10px;
-}
-
-.StudentLinkDialog__teacher {
-  display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  margin: 10px 0 16px;
-  background: linear-gradient(135deg, var(--grad-start), var(--grad-end));
-  backdrop-filter: blur(var(--glass-blur)) #{'saturate(var(--glass-saturation))'};
-  -webkit-backdrop-filter: blur(var(--glass-blur)) #{'saturate(var(--glass-saturation))'};
-  border: var(--glass-border);
-  box-shadow: var(--glass-shadow);
-  border-radius: 10px;
-  padding: 10px 12px;
+  gap: 16px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-gray-15, rgba(17, 24, 39, 0.05));
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06);
 }
 
-.StudentLinkDialog__student__info {
+.StudentLinkDialog__studentMeta {
   display: flex;
   flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
-.StudentLinkDialog__student__actions {
+.StudentLinkDialog__studentName {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.StudentLinkDialog__studentDate {
+  font-size: 0.8rem;
+  color: var(--color-text-muted, rgba(17, 17, 17, 0.55));
+}
+
+.StudentLinkDialog__studentActions {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.StudentLinkDialog__listHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.StudentLinkDialog__counter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.8rem;
+  background: var(--color-primary, #4f46e5);
+  color: var(--color-surface, #fff);
 }
 
 .StudentLinkDialog__empty {
-  opacity: 0.8;
+  width: 100%;
+  padding: 28px;
+  text-align: center;
+  border-radius: 12px;
+  border: 1px dashed var(--color-gray-30, rgba(17, 24, 39, 0.12));
+  color: var(--color-text-muted, rgba(17, 17, 17, 0.6));
+  background: var(--color-gray-95, rgba(17, 24, 39, 0.03));
+}
+
+.StudentLinkDialog__empty p {
+  margin: 0;
 }
 
 .StudentLinkDialog__footer {
-  margin-top: 12px;
-  font-size: 12px;
-  opacity: 0.9;
+  border-top: 1px solid var(--color-gray-20, rgba(17, 24, 39, 0.08));
+  padding-top: 16px;
+  font-size: 0.85rem;
+  color: var(--color-text-muted, rgba(17, 17, 17, 0.65));
+}
+
+.StudentLinkDialog__footer h4 {
+  margin: 0 0 8px;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text, #111);
+}
+
+.StudentLinkDialog__footer ol {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+@media (max-width: 768px) {
+  .StudentLinkDialog {
+    min-width: unset;
+  }
+
+  .StudentLinkDialog__card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .StudentLinkDialog__form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .StudentLinkDialog__student {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .StudentLinkDialog__studentActions {
+    width: 100%;
+  }
+
+  .StudentLinkDialog__studentActions > * {
+    flex: 1 1 100%;
+  }
 }

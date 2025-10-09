@@ -4,7 +4,6 @@ import React from "react";
 import { isMatsinPlusSignedUser } from "../app_constants";
 
 import { DebugFooter, isVisualDebuggerEnabled } from "./DebugCanvas";
-import { EncryptedIcon } from "./EncryptedIcon";
 import { ExcalidrawPlusAppLink } from "./ExcalidrawPlusAppLink";
 
 export const AppFooter = React.memo(
@@ -19,11 +18,7 @@ export const AppFooter = React.memo(
           }}
         >
           {isVisualDebuggerEnabled() && <DebugFooter onChange={onChange} />}
-          {isMatsinPlusSignedUser ? (
-            <ExcalidrawPlusAppLink />
-          ) : (
-            <EncryptedIcon />
-          )}
+          {isMatsinPlusSignedUser && <ExcalidrawPlusAppLink />}
         </div>
       </Footer>
     );
