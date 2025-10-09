@@ -1,0 +1,6 @@
+﻿model = "gpt-5"
+model_reasoning_effort = "high"
+
+[mcp_servers.chrome-devtools]
+command = "npx"
+args = ["-y", "chrome-devtools-mcp@latest"]

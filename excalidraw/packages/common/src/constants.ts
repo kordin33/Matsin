@@ -237,8 +237,8 @@ export const COLOR_VOICE_CALL = "#a2f1a6";
 
 export const CANVAS_ONLY_ACTIONS = ["selectAll"];
 
-export const DEFAULT_GRID_SIZE = 24; // nieco większy podstawowy grid
-export const DEFAULT_GRID_STEP = 6;  // zachowuje sensowne major co 6 kratek
+export const DEFAULT_GRID_SIZE = 20;
+export const DEFAULT_GRID_STEP = 5;
 
 export const IMAGE_MIME_TYPES = {
   svg: "image/svg+xml",

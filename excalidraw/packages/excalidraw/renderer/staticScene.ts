@@ -30,7 +30,7 @@ import {
 } from "../components/hyperlink/helpers";
 
 import { bootstrapCanvas, getNormalizedCanvasDimensions } from "./helpers";
-import { renderInfiniteGrid, GridStyle, getAdaptiveGridSize, renderScreenGrid } from "./infiniteGrid";
+import { renderInfiniteGrid, GridStyle, getAdaptiveGridSize } from "./infiniteGrid";
 
 import type {
   StaticCanvasRenderConfig,
@@ -245,16 +245,27 @@ const _renderStaticScene = ({
   // aby siatka była zakotwiczona w world space (jak w Idroo)
   if (renderGrid && appState.gridModeEnabled) {
     const z = appState.zoom.value || 1;
-    // render in screen-space for perfect scroll anchoring
-    renderScreenGrid(context, normalizedWidth, normalizedHeight, {
-      sizePx: appState.gridSize, // stały odstęp w px
-      scrollX: appState.scrollX,
-      scrollY: appState.scrollY,
-      zoom: appState.zoom,
-      gridStep: Math.max(1, appState.gridStep),
-      color: appState.theme === "dark" ? "#424242" : "#4a4a4a",
-      majorColor: appState.theme === "dark" ? "#606060" : "#7a7a7a",
-    });
+    // keep grid spacing constant in screen px (like Miro/Idroo),
+    // convert desired px spacing to world units by dividing by zoom
+    const worldGridSize = Math.max(1, appState.gridSize / z);
+    renderInfiniteGrid(
+      context,
+      normalizedWidth,
+      normalizedHeight,
+      {
+        scrollX: appState.scrollX,
+        scrollY: appState.scrollY,
+        zoom: appState.zoom,
+        style: GridStyle.LINES,
+        size: worldGridSize,
+        color: appState.theme === "dark" ? "#404040" : "#4a4a4a",
+        opacity: 0.6,
+        lineWidth: Math.max(1 / z, 0.5),
+        majorGridMultiplier: Math.max(1, appState.gridStep),
+        majorLineWidth: Math.max(1.5 / z, 0.75),
+        majorColor: appState.theme === "dark" ? "#606060" : "#6a6a6a",
+      }
+    );
   }
 
   // Dopiero potem skalujemy kontekst do rysowania elementów sceny

@@ -165,26 +165,28 @@
   background: linear-gradient(135deg, var(--grad-start) 0%, var(--grad-end) 100%) !important;
 }
 
-/* Keep native ToolIcon visuals to avoid misalignment/distortion */
-.excalidraw .App-toolbar .ToolIcon .ToolIcon__icon {
-  background-color: transparent !important;
-  border-radius: var(--border-radius-lg) !important;
+/* slightly more contrast under each circular tool button to improve visibility */
+.excalidraw .ToolIcon .ToolIcon__icon {
+  background-color: rgba(255, 255, 255, 0.25) !important; /* subtle pill */
+  border-radius: 999px;
 }
 
-/* Remove forced SVG tinting and heavy shadows that caused visual glitches */
-/* Previously we were overriding fill/stroke with !important and adding drop-shadows on SVGs.
-   Rely on component-provided color states instead for proper contrast & disabled/active styling. */
-.excalidraw .App-toolbar .ToolIcon .ToolIcon__icon svg,
-.excalidraw .App-toolbar .dropdown-menu .dropdown-menu-item__icon svg,
-.excalidraw .App-toolbar .footer-center svg,
-.excalidraw .App-toolbar .top-right-ui svg {
-  filter: none !important;
+/* Icon tinting for Apple-like subtle look */
+.excalidraw .ToolIcon .ToolIcon__icon svg,
+.excalidraw .dropdown-menu .dropdown-menu-item__icon svg,
+.excalidraw .footer-center svg,
+.excalidraw .top-right-ui svg {
+  /* Use currentColor fallback to tint */
+  fill: var(--icon-color) !important;
+  stroke: var(--icon-color) !important;
+  filter: drop-shadow(0 1px 0 rgba(255,255,255,0.15));
 }
 
-/* Keep hover/active subtle without affecting layout */
-.excalidraw .App-toolbar .ToolIcon.ToolIcon_type_button:hover .ToolIcon__icon,
-.excalidraw .App-toolbar .ToolIcon.ToolIcon_type_button:focus .ToolIcon__icon {
-  /* let the base styles handle background; no extra drop-shadow */
+/* Active/hover emphasis (subtle) */
+.excalidraw .ToolIcon.ToolIcon_type_button:focus .ToolIcon__icon svg,
+.excalidraw .ToolIcon.ToolIcon_type_button:hover .ToolIcon__icon svg,
+.excalidraw .dropdown-menu .dropdown-menu-item:hover .dropdown-menu-item__icon svg {
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.16));
 }
 
 .excalidraw-app.is-collaborating {
