@@ -27,7 +27,7 @@ interface StudentLink {
   studentName: string;
   roomId: string;
   roomKey: string;
-  permalink?: string;
+  permalink: string;
   url: string;
   createdAt: string;
 }
@@ -35,7 +35,24 @@ interface StudentLink {
 const loadStudentLinks = (): StudentLink[] => {
   try {
     const stored = localStorage.getItem(STUDENT_LINKS_KEY);
-    return stored ? JSON.parse(stored) : [];
+    if (!stored) {
+      return [];
+    }
+    const parsed = JSON.parse(stored) as any[];
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+    return parsed.map((item) => {
+      const permalink =
+        typeof item?.permalink === "string" && item.permalink.length
+          ? item.permalink
+          : item?.id;
+      return {
+        ...item,
+        permalink,
+        id: item?.id || permalink,
+      } as StudentLink;
+    });
   } catch {
     return [];
   }
@@ -94,6 +111,7 @@ export const StudentLinkDialog = ({
     }
   });
 
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { onCopy, copyStatus } = useCopyStatus();
 
@@ -107,9 +125,14 @@ export const StudentLinkDialog = ({
         if (!teacherId) {
           return;
         }
-        const list = teacherToken
-          ? await apiClient.listTeacherPermalinks(teacherId, teacherToken)
-          : await apiClient.listPermalinks(teacherId);
+        if (!teacherToken) {
+          setErrorMessage(
+            "Brakuje tokenu nauczyciela. Otw\u00f3rz tablic\u0119 korzystaj\u0105c z linku wygenerowanego w panelu administratora.",
+          );
+          return;
+        }
+        setErrorMessage(null);
+        const list = await apiClient.listTeacherPermalinks(teacherId, teacherToken);
         const mapped: StudentLink[] = (list.items || []).map((item) => {
           const name = item.student_name || "Ucze\u0144";
           const url = `${window.location.origin}${window.location.pathname}?permalink=${encodeURIComponent(
@@ -126,18 +149,26 @@ export const StudentLinkDialog = ({
           };
         });
 
-        if (mapped.length) {
-          setStudentLinks(mapped);
-          saveStudentLinks(mapped);
-        }
+        setStudentLinks(mapped);
+        saveStudentLinks(mapped);
       } catch (error) {
         console.error("Failed to fetch student links", error);
+        setErrorMessage(
+          "Nie uda\u0142o si\u0119 pobra\u0107 zapisanych link\u00f3w. Spr\u00f3buj ponownie p\u00f3\u017aniej.",
+        );
       }
     })();
-  }, [teacherId]);
+  }, [teacherId, teacherToken]);
 
   const createStudentLink = async () => {
     if (!newStudentName.trim()) {
+      return;
+    }
+
+    if (!teacherToken) {
+      setErrorMessage(
+        "Brakuje tokenu nauczyciela. Upewnij si\u0119, \u017ce korzystasz z linku udost\u0119pnionego przez administratora.",
+      );
       return;
     }
 
@@ -161,7 +192,7 @@ export const StudentLinkDialog = ({
         room_key: roomKey,
         student_name: name,
         teacher_id: teacherId,
-        teacher_token: teacherToken || undefined,
+        teacher_token: teacherToken,
       });
 
       const url = `${window.location.origin}${window.location.pathname}?permalink=${encodeURIComponent(
@@ -169,7 +200,7 @@ export const StudentLinkDialog = ({
       )}&student=${encodeURIComponent(name)}`;
 
       const newLink: StudentLink = {
-        id: Date.now().toString(),
+        id: permalink,
         studentName: name,
         roomId,
         roomKey,
@@ -182,8 +213,10 @@ export const StudentLinkDialog = ({
       setStudentLinks(updatedLinks);
       saveStudentLinks(updatedLinks);
       setNewStudentName("");
+      setErrorMessage(null);
     } catch (error) {
       console.error("Failed to create student link", error);
+      setErrorMessage("Nie uda\u0142o si\u0119 utworzy\u0107 linku. Spr\u00f3buj ponownie.");
     } finally {
       setIsCreating(false);
     }
@@ -211,26 +244,31 @@ export const StudentLinkDialog = ({
     }
   };
 
-  const deleteStudentLink = async (linkId: string) => {
-    const link = studentLinks.find((item) => item.id === linkId);
+  const deleteStudentLink = async (permalink: string) => {
+    if (!teacherToken) {
+      setErrorMessage(
+        "Brakuje tokenu nauczyciela. Nie mo\u017cna usun\u0105\u0107 linku bez poprawnej autoryzacji.",
+      );
+      return;
+    }
+    const link = studentLinks.find((item) => item.permalink === permalink);
     try {
       if (link?.permalink) {
-        if (teacherToken) {
-          await apiClient.deleteTeacherPermalink(teacherId, link.permalink, teacherToken);
-        } else {
-          await apiClient.deletePermalink(link.permalink, teacherId);
-        }
+        await apiClient.deleteTeacherPermalink(teacherId, link.permalink, teacherToken);
       }
+      const updatedLinks = studentLinks.filter((item) => item.permalink !== permalink);
+      setStudentLinks(updatedLinks);
+      saveStudentLinks(updatedLinks);
+      setErrorMessage(null);
     } catch (error) {
       console.error("Unable to delete student link", error);
+      setErrorMessage("Nie uda\u0142o si\u0119 usun\u0105\u0107 linku. Spr\u00f3buj ponownie.");
     }
-
-    const updatedLinks = studentLinks.filter((item) => item.id !== linkId);
-    setStudentLinks(updatedLinks);
-    saveStudentLinks(updatedLinks);
   };
 
-  const manageLink = `${window.location.origin}${window.location.pathname}?teacher=${teacherId}`;
+  const manageLink = teacherToken
+    ? `${window.location.origin}${window.location.pathname}?teacher=${teacherId}&t=${teacherToken}`
+    : `${window.location.origin}${window.location.pathname}?teacher=${teacherId}`;
   const hasStudents = studentLinks.length > 0;
   const studentCountLabel = studentLinks.length.toString().padStart(2, "0");
 
@@ -244,6 +282,12 @@ export const StudentLinkDialog = ({
             <p>Zarz\u0105dzaj sta\u0142ymi zaproszeniami i do\u0142\u0105czaj do tablic uczni\u00f3w w kilka sekund.</p>
           </div>
         </header>
+
+        {errorMessage && (
+          <div className="StudentLinkDialog__alert StudentLinkDialog__alert--error">
+            {errorMessage}
+          </div>
+        )}
 
         <section className="StudentLinkDialog__card StudentLinkDialog__teacher">
           <div className="StudentLinkDialog__cardBody">
@@ -294,7 +338,7 @@ export const StudentLinkDialog = ({
           {hasStudents ? (
             <ul className="StudentLinkDialog__students">
               {studentLinks.map((link) => (
-                <li key={link.id} className="StudentLinkDialog__student">
+                <li key={link.permalink} className="StudentLinkDialog__student">
                   <div className="StudentLinkDialog__studentMeta">
                     <span className="StudentLinkDialog__studentName">{link.studentName}</span>
                     <span className="StudentLinkDialog__studentDate">Utworzono {link.createdAt}</span>
@@ -321,7 +365,7 @@ export const StudentLinkDialog = ({
                       label="Usu\u0144"
                       onClick={() => {
                         if (confirm(`Czy usun\u0105\u0107 link dla ${link.studentName}?`)) {
-                          deleteStudentLink(link.id);
+                          deleteStudentLink(link.permalink);
                         }
                       }}
                     />

@@ -1,77 +1,94 @@
-const backendBase = (typeof window !== 'undefined' && window.location) ?
-  (import.meta?.env?.VITE_APP_BACKEND_URL || 'http://localhost:3005') :
-  (process.env.BACKEND_URL || 'http://localhost:3005');
+const backendBase =
+  typeof window !== "undefined" && window.location
+    ? import.meta?.env?.VITE_APP_BACKEND_URL || "http://localhost:3002"
+    : process.env.BACKEND_URL || "http://localhost:3002";
 
-const qs = (s) => document.querySelector(s);
-const statusEl = qs('#status');
-const tableBody = qs('#teachersTable');
-const tokenInput = qs('#adminToken');
+const qs = (selector) => document.querySelector(selector);
+const statusEl = qs("#status");
+const tableBody = qs("#teachersTable");
+const tokenInput = qs("#adminToken");
 
-const setStatus = (msg, type = 'info') => {
-  statusEl.className = type === 'error' ? 'error' : 'success';
-  statusEl.textContent = msg;
+const setStatus = (message, variant = "success") => {
+  if (!statusEl) {
+    return;
+  }
+  statusEl.className = variant === "error" ? "error" : "success";
+  statusEl.textContent = message;
 };
 
-const teacherLink = (teacher_id, token) => {
+const teacherLink = (teacherId, token) => {
   const appOrigin = window.location.origin;
-  return `${appOrigin}/?teacher=${encodeURIComponent(teacher_id)}&t=${encodeURIComponent(token)}`;
+  return `${appOrigin}/?teacher=${encodeURIComponent(teacherId)}&t=${encodeURIComponent(
+    token,
+  )}`;
 };
 
 const renderTeachers = (items) => {
-  tableBody.innerHTML = '';
-  for (const t of items) {
-    const tr = document.createElement('tr');
+  if (!tableBody) {
+    return;
+  }
+  tableBody.innerHTML = "";
+  items.forEach((teacher) => {
+    const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${t.name || ''}</td>
-      <td>${t.email || ''}</td>
-      <td class="token">${t.teacher_id}</td>
-      <td class="token">${t.token}</td>
-      <td><a target="_blank" href="${teacherLink(t.teacher_id, t.token)}">Otwórz panel nauczyciela</a></td>
+      <td>${teacher.name || ""}</td>
+      <td>${teacher.email || ""}</td>
+      <td class="token">${teacher.teacher_id}</td>
+      <td class="token">${teacher.token}</td>
+      <td><a target="_blank" href="${teacherLink(teacher.teacher_id, teacher.token)}">Otw\u00f3rz panel nauczyciela</a></td>
     `;
     tableBody.appendChild(tr);
-  }
+  });
 };
 
-const adminFetch = async (path, opts = {}) => {
-  const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
-  const token = tokenInput.value.trim();
-  if (!token) throw new Error('Wprowadź admin token');
-  headers['x-admin-token'] = token;
-  const resp = await fetch(`${backendBase}${path}`, { ...opts, headers });
-  if (!resp.ok) {
-    const txt = await resp.text();
-    throw new Error(`HTTP ${resp.status}: ${txt}`);
+const requireAdminToken = () => {
+  const token = tokenInput?.value.trim();
+  if (!token) {
+    throw new Error("Wprowad\u017a token administratora");
   }
-  return resp.json();
+  return token;
 };
 
-qs('#loadTeachers').addEventListener('click', async () => {
+const adminFetch = async (path, options = {}) => {
+  const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
+  const token = requireAdminToken();
+  headers["x-admin-token"] = token;
+  const response = await fetch(`${backendBase}${path}`, { ...options, headers });
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`HTTP ${response.status}: ${body}`);
+  }
+  return response.json();
+};
+
+qs("#loadTeachers")?.addEventListener("click", async () => {
   try {
-    const json = await adminFetch('/api/admin/teachers');
+    const json = await adminFetch("/api/admin/teachers");
     renderTeachers(json.items || []);
-    setStatus('Załadowano listę nauczycieli', 'ok');
-  } catch (e) {
-    setStatus(e.message, 'error');
+    setStatus("Za\u0142adowano list\u0119 nauczycieli", "success");
+  } catch (error) {
+    setStatus(error.message, "error");
   }
 });
 
-qs('#uploadCsv').addEventListener('click', async () => {
+qs("#uploadCsv")?.addEventListener("click", async () => {
   try {
-    let csv = qs('#csvText').value.trim();
+    let csv = qs("#csvText")?.value.trim();
     if (!csv) {
-      const file = qs('#csvFile').files[0];
-      if (!file) throw new Error('Wybierz plik CSV lub wklej dane');
+      const file = qs("#csvFile")?.files?.[0];
+      if (!file) {
+        throw new Error("Wybierz plik CSV lub wklej dane");
+      }
       csv = await file.text();
     }
-    const json = await adminFetch('/api/admin/teachers/upload', {
-      method: 'POST',
+    const json = await adminFetch("/api/admin/teachers/upload", {
+      method: "POST",
       body: JSON.stringify({ csv }),
     });
-    const list = await adminFetch('/api/admin/teachers');
+    const list = await adminFetch("/api/admin/teachers");
     renderTeachers(list.items || []);
-    setStatus(`Wgrano ${json.items?.length || 0} nauczycieli`, 'ok');
-  } catch (e) {
-    setStatus(e.message, 'error');
+    setStatus(`Wgrano ${json.items?.length || 0} nauczycieli`, "success");
+  } catch (error) {
+    setStatus(error.message, "error");
   }
 });
-

@@ -1,14 +1,19 @@
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { evaluate, format } from "mathjs";
-import {
-  Calculator as CalculatorIcon,
-  Binary,
-  FileSpreadsheet,
-  Grid3x3,
-  Sigma,
-  Table2,
-  TrendingUp,
-} from "lucide-react";
+
+type IconProps = { size?: number; className?: string };
+const createIcon = (glyph: string): React.FC<IconProps> => ({ className }) => (
+  <span className={className} aria-hidden="true">
+    {glyph}
+  </span>
+);
+const CalculatorIcon = createIcon("??");
+const Binary = createIcon("??");
+const FileSpreadsheet = createIcon("??");
+const Grid3x3 = createIcon("#");
+const Sigma = createIcon("?");
+const Table2 = createIcon("??");
+const TrendingUp = createIcon("??");
 
 import "./CasioCalculator.scss";
 
@@ -107,6 +112,19 @@ const factorial = (value: number): number => {
   return value * factorial(value - 1);
 };
 
+const clampPosition = (x: number, y: number, element: HTMLElement | null) => {
+  if (!element) {
+    return { x, y };
+  }
+  const rect = element.getBoundingClientRect();
+  const maxX = Math.max(0, window.innerWidth - rect.width);
+  const maxY = Math.max(0, window.innerHeight - rect.height);
+  return {
+    x: Math.min(Math.max(0, x), maxX),
+    y: Math.min(Math.max(0, y), maxY),
+  };
+};
+
 const formatNumber = (value: number, mode: DisplayFormat): string => {
   if (!Number.isFinite(value)) {
     return value.toString();
@@ -145,7 +163,7 @@ const sanitizeExpression = (expression: string, variables: Variables) => {
     .replace(/Ans/g, variables.Ans.toString());
 };
 
-const CasioCalculator: React.FC<CasioCalculatorProps> = () => {
+const CasioCalculatorBase: React.FC<CasioCalculatorProps> = () => {
   const [display, setDisplay] = useState<string>("0");
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [mode, setMode] = useState<ModeId>("CALC");
@@ -585,5 +603,124 @@ const CalculatorButton: React.FC<CalculatorButtonProps> = ({ label, onClick, var
   );
 };
 
-export default CasioCalculator;
+const DraggableCasioCalculator: React.FC<CasioCalculatorProps> = (props) => {
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState<{ x: number; y: number }>({ x: 64, y: 64 });
+  const [dragging, setDragging] = useState(false);
+  const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  const updatePosition = useCallback(
+    (rawX: number, rawY: number) => {
+      setPosition((prev) => {
+        const next = clampPosition(rawX, rawY, wrapperRef.current);
+        return prev.x === next.x && prev.y === next.y ? prev : next;
+      });
+    },
+    [],
+  );
+
+  useEffect(() => {
+    const header = wrapperRef.current?.querySelector(".casio-header") as HTMLElement | null;
+    if (!header) {
+      return;
+    }
+
+    const handleMouseDown = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target?.closest("button")) {
+        return;
+      }
+      const rect = wrapperRef.current?.getBoundingClientRect();
+      dragOffsetRef.current = {
+        x: event.clientX - (rect?.left ?? 0),
+        y: event.clientY - (rect?.top ?? 0),
+      };
+      setDragging(true);
+      event.preventDefault();
+    };
+
+    const handleTouchStart = (event: TouchEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target?.closest("button")) {
+        return;
+      }
+      const touch = event.touches[0];
+      const rect = wrapperRef.current?.getBoundingClientRect();
+      dragOffsetRef.current = {
+        x: touch.clientX - (rect?.left ?? 0),
+        y: touch.clientY - (rect?.top ?? 0),
+      };
+      setDragging(true);
+      event.preventDefault();
+    };
+
+    header.addEventListener("mousedown", handleMouseDown);
+    header.addEventListener("touchstart", handleTouchStart, { passive: false });
+
+    return () => {
+      header.removeEventListener("mousedown", handleMouseDown);
+      header.removeEventListener("touchstart", handleTouchStart);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!dragging) {
+      return;
+    }
+
+    const handlePointerMove = (event: MouseEvent | TouchEvent) => {
+      const source =
+        "touches" in event ? event.touches[0] : ("clientX" in event ? event : null);
+      if (!source) {
+        return;
+      }
+      const rawX = source.clientX - dragOffsetRef.current.x;
+      const rawY = source.clientY - dragOffsetRef.current.y;
+      updatePosition(rawX, rawY);
+      event.preventDefault?.();
+    };
+
+    const stopDragging = () => {
+      setDragging(false);
+    };
+
+    window.addEventListener("mousemove", handlePointerMove);
+    window.addEventListener("mouseup", stopDragging);
+    window.addEventListener("touchmove", handlePointerMove, { passive: false });
+    window.addEventListener("touchend", stopDragging);
+    window.addEventListener("touchcancel", stopDragging);
+
+    return () => {
+      window.removeEventListener("mousemove", handlePointerMove);
+      window.removeEventListener("mouseup", stopDragging);
+      window.removeEventListener("touchmove", handlePointerMove);
+      window.removeEventListener("touchend", stopDragging);
+      window.removeEventListener("touchcancel", stopDragging);
+    };
+  }, [dragging, updatePosition]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setPosition((prev) => clampPosition(prev.x, prev.y, wrapperRef.current));
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  return (
+    <div
+      ref={wrapperRef}
+      className={`casio-calculator-wrapper${dragging ? " dragging" : ""}`}
+      style={{ transform: `translate3d(${position.x}px, ${position.y}px, 0)` }}
+      role="presentation"
+    >
+      <CasioCalculatorBase {...props} />
+    </div>
+  );
+};
+
+export default DraggableCasioCalculator;
+
+
+
 

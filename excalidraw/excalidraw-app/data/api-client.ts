@@ -2,9 +2,9 @@ import type { SyncableExcalidrawElement } from "./index";
 
 const getServerUrl = () => {
   if (typeof window !== 'undefined') {
-    return import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:3005';
+    return import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:3002';
   }
-  return process.env.BACKEND_URL || 'http://localhost:3005';
+  return process.env.BACKEND_URL || 'http://localhost:3002';
 };
 
 export interface ApiScene {
@@ -123,13 +123,13 @@ class ApiClient {
     }
   }
 
-  async listPermalinks(teacherId: string): Promise<TeacherPermalinkList> {
-    const params = new URLSearchParams({ teacher_id: teacherId });
+  async listPermalinks(teacherId: string, token: string): Promise<TeacherPermalinkList> {
+    const params = new URLSearchParams({ teacher_id: teacherId, token });
     return this.request<TeacherPermalinkList>(`/api/permalinks?${params.toString()}`);
   }
 
-  async deletePermalink(permalink: string, teacherId: string): Promise<{ ok: boolean }> {
-    const params = new URLSearchParams({ teacher_id: teacherId });
+  async deletePermalink(permalink: string, teacherId: string, token: string): Promise<{ ok: boolean }> {
+    const params = new URLSearchParams({ teacher_id: teacherId, token });
     return this.request<{ ok: boolean }>(`/api/permalinks/${encodeURIComponent(permalink)}?${params.toString()}`, {
       method: 'DELETE',
     });

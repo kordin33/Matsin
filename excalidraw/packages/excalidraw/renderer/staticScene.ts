@@ -12,9 +12,7 @@ import {
   getTargetFrame,
   shouldApplyFrameClip,
 } from "@excalidraw/element";
-
 import { renderElement } from "@excalidraw/element";
-
 import { getElementAbsoluteCoords } from "@excalidraw/element";
 
 import type {
@@ -36,74 +34,15 @@ import type {
   StaticCanvasRenderConfig,
   StaticSceneRenderConfig,
 } from "../scene/types";
-import type { StaticCanvasAppState, Zoom } from "../types";
+import type { StaticCanvasAppState } from "../types";
 
-const GridLineColor = {
-  Bold: "#dddddd",
-  Regular: "#e5e5e5",
+// ==== GRID KOLORY ====
+const GRID_COLORS = {
+  minor: "#e5e5e5",
+  major: "#dddddd",
 } as const;
 
-const mod = (a: number, m: number) => ((a % m) + m) % m;
-
-const strokeGrid = (
-  context: CanvasRenderingContext2D,
-  /** grid cell size in WORLD units passed in; we'll convert to screen px */
-  gridSizeWorld: number,
-  /** draw a bold(major) line every N minor lines */
-  gridStep: number,
-  scrollX: number,
-  scrollY: number,
-  zoom: Zoom,
-  width: number,
-  height: number,
-) => {
-  const z = zoom.value || 1;
-  const stepPx = Math.max(1, gridSizeWorld * z);
-  const offX = mod((-scrollX) * z, stepPx);
-  const offY = mod((-scrollY) * z, stepPx);
-
-  context.save();
-  // crisp 1px lines in CSS px
-  context.lineWidth = 1;
-  context.setLineDash([]);
-
-  // MINOR lines
-  context.beginPath();
-  for (let x = offX; x <= width; x += stepPx) {
-    const xx = Math.floor(x) + 0.5;
-    context.moveTo(xx, 0);
-    context.lineTo(xx, height);
-  }
-  for (let y = offY; y <= height; y += stepPx) {
-    const yy = Math.floor(y) + 0.5;
-    context.moveTo(0, yy);
-    context.lineTo(width, yy);
-  }
-  context.strokeStyle = GridLineColor.Regular;
-  context.stroke();
-
-  // MAJOR lines (every gridStep minors)
-  if (gridStep > 1) {
-    context.beginPath();
-    const majorStepPx = stepPx * gridStep;
-    const offXM = mod((-scrollX) * z, majorStepPx);
-    const offYM = mod((-scrollY) * z, majorStepPx);
-    for (let x = offXM; x <= width; x += majorStepPx) {
-      const xx = Math.floor(x) + 0.5;
-      context.moveTo(xx, 0);
-      context.lineTo(xx, height);
-    }
-    for (let y = offYM; y <= height; y += majorStepPx) {
-      const yy = Math.floor(y) + 0.5;
-      context.moveTo(0, yy);
-      context.lineTo(width, yy);
-    }
-    context.strokeStyle = GridLineColor.Bold;
-    context.stroke();
-  }
-  context.restore();
-};
-
+// ==== FRAME CLIP ====
 export const frameClip = (
   frame: ExcalidrawFrameLikeElement,
   context: CanvasRenderingContext2D,
@@ -130,15 +69,12 @@ export const frameClip = (
   );
 };
 
+// ==== LINK ICON CACHE ====
 type LinkIconCanvas = HTMLCanvasElement & { zoom: number };
-
 const linkIconCanvasCache: {
   regularLink: LinkIconCanvas | null;
   elementLink: LinkIconCanvas | null;
-} = {
-  regularLink: null,
-  elementLink: null,
-};
+} = { regularLink: null, elementLink: null };
 
 const renderLinkIcon = (
   element: NonDeletedExcalidrawElement,
@@ -162,7 +98,6 @@ const renderLinkIcon = (
     const canvasKey = isElementLink(element.link)
       ? "elementLink"
       : "regularLink";
-
     let linkCanvas = linkIconCanvasCache[canvasKey];
 
     if (!linkCanvas || linkCanvas.zoom !== appState.zoom.value) {
@@ -174,32 +109,26 @@ const renderLinkIcon = (
         height * window.devicePixelRatio * appState.zoom.value;
       linkIconCanvasCache[canvasKey] = linkCanvas;
 
-      const linkCanvasCacheContext = linkCanvas.getContext("2d")!;
-      linkCanvasCacheContext.scale(
+      const cc = linkCanvas.getContext("2d")!;
+      cc.scale(
         window.devicePixelRatio * appState.zoom.value,
         window.devicePixelRatio * appState.zoom.value,
       );
-      linkCanvasCacheContext.fillStyle = appState.viewBackgroundColor || "#fff";
-      linkCanvasCacheContext.fillRect(0, 0, width, height);
-
+      cc.fillStyle = appState.viewBackgroundColor || "#fff";
+      cc.fillRect(0, 0, width, height);
       if (canvasKey === "elementLink") {
-        linkCanvasCacheContext.drawImage(ELEMENT_LINK_IMG, 0, 0, width, height);
+        cc.drawImage(ELEMENT_LINK_IMG, 0, 0, width, height);
       } else {
-        linkCanvasCacheContext.drawImage(
-          EXTERNAL_LINK_IMG,
-          0,
-          0,
-          width,
-          height,
-        );
+        cc.drawImage(EXTERNAL_LINK_IMG, 0, 0, width, height);
       }
-
-      linkCanvasCacheContext.restore();
+      cc.restore?.();
     }
     context.drawImage(linkCanvas, x - centerX, y - centerY, width, height);
     context.restore();
   }
 };
+
+// ==== RENDER ====
 const _renderStaticScene = ({
   canvas,
   rc,
@@ -210,9 +139,7 @@ const _renderStaticScene = ({
   appState,
   renderConfig,
 }: StaticSceneRenderConfig) => {
-  if (canvas === null) {
-    return;
-  }
+  if (!canvas) return;
 
   const { renderGrid = true, isExporting } = renderConfig;
 
@@ -231,28 +158,31 @@ const _renderStaticScene = ({
     viewBackgroundColor: appState.viewBackgroundColor,
   });
 
-  // Najpierw rysujemy siatkę na nieskalowanym kontekście, przekazując zoom/scroll,
-  // aby siatka była zakotwiczona w world space (jak w Idroo)
+  // 1) GRID (screen-space, bez setTransform; zakotwiczony w world-space)
   if (renderGrid && appState.gridModeEnabled) {
-    const z = appState.zoom.value || 1;
-    const worldGridSize = Math.max(1, appState.gridSize / z);
-    strokeGrid(
-      context,
-      worldGridSize,
-      Math.max(1, appState.gridStep),
-      appState.scrollX,
-      appState.scrollY,
+    const sizeWorld = getAdaptiveGridSize(
+      Math.max(1, appState.gridSize || 16),
       appState.zoom,
-      normalizedWidth,
-      normalizedHeight,
     );
+    renderInfiniteGrid(context, normalizedWidth, normalizedHeight, {
+      size: sizeWorld,
+      scrollX: appState.scrollX,
+      scrollY: appState.scrollY,
+      zoom: appState.zoom,
+      style: GridStyle.LINES,               // DOTS / CROSS jeśli chcesz
+      color: GRID_COLORS.minor,
+      majorColor: GRID_COLORS.major,
+      opacity: 0.35,
+      lineWidth: 1,
+      majorGridMultiplier: Math.max(1, appState.gridStep || 5),
+      majorLineWidth: 1.5,
+    });
   }
 
-  // Dopiero potem skalujemy kontekst do rysowania elementów sceny
+  // 2) CONTENT (world-space, transform kamery)
   context.scale(appState.zoom.value, appState.zoom.value);
 
   const groupsToBeAddedToFrame = new Set<string>();
-
   visibleElements.forEach((element) => {
     if (
       element.groupIds.length > 0 &&
@@ -263,17 +193,14 @@ const _renderStaticScene = ({
         appState.frameToHighlight,
         elementsMap,
       ) ||
-        element.groupIds.find((groupId) => groupsToBeAddedToFrame.has(groupId)))
+        element.groupIds.find((gid) => groupsToBeAddedToFrame.has(gid)))
     ) {
-      element.groupIds.forEach((groupId) =>
-        groupsToBeAddedToFrame.add(groupId),
-      );
+      element.groupIds.forEach((gid) => groupsToBeAddedToFrame.add(gid));
     }
   });
-
   const inFrameGroupsMap = new Map<string, boolean>();
 
-  // Paint visible elements
+  // Rysuj elementy (poza iframe'ami)
   visibleElements
     .filter((el) => !isIframeLikeElement(el))
     .forEach((element) => {
@@ -285,8 +212,7 @@ const _renderStaticScene = ({
           element.containerId &&
           elementsMap.has(element.containerId)
         ) {
-          // will be rendered with the container
-          return;
+          return; // tekst wyrenderuje się z kontenerem
         }
 
         context.save();
@@ -309,26 +235,17 @@ const _renderStaticScene = ({
           ) {
             frameClip(frame, context, renderConfig, appState);
           }
-          renderElement(
-            element,
-            elementsMap,
-            allElementsMap,
-            rc,
-            context,
-            renderConfig,
-            appState,
-          );
-        } else {
-          renderElement(
-            element,
-            elementsMap,
-            allElementsMap,
-            rc,
-            context,
-            renderConfig,
-            appState,
-          );
         }
+
+        renderElement(
+          element,
+          elementsMap,
+          allElementsMap,
+          rc,
+          context,
+          renderConfig,
+          appState,
+        );
 
         const boundTextElement = getBoundTextElement(element, elementsMap);
         if (boundTextElement) {
@@ -360,7 +277,7 @@ const _renderStaticScene = ({
       }
     });
 
-  // render embeddables on top
+  // Iframe/embeds na wierzchu
   visibleElements
     .filter((el) => isIframeLikeElement(el))
     .forEach((element) => {
@@ -380,8 +297,7 @@ const _renderStaticScene = ({
             isIframeLikeElement(element) &&
             (isExporting ||
               (isEmbeddableElement(element) &&
-                renderConfig.embedsValidationStatus.get(element.id) !==
-                  true)) &&
+                renderConfig.embedsValidationStatus.get(element.id) !== true)) &&
             element.width &&
             element.height
           ) {
@@ -400,20 +316,15 @@ const _renderStaticScene = ({
             renderLinkIcon(element, context, appState, elementsMap);
           }
         };
-        // - when exporting the whole canvas, we DO NOT apply clipping
-        // - when we are exporting a particular frame, apply clipping
-        //   if the containing frame is not selected, apply clipping
-        const frameId = element.frameId || appState.frameToHighlight?.id;
 
+        const frameId = element.frameId || appState.frameToHighlight?.id;
         if (
           frameId &&
           appState.frameRendering.enabled &&
           appState.frameRendering.clip
         ) {
           context.save();
-
           const frame = getTargetFrame(element, elementsMap, appState);
-
           if (
             frame &&
             shouldApplyFrameClip(
@@ -436,7 +347,7 @@ const _renderStaticScene = ({
       }
     });
 
-  // render pending nodes for flowcharts
+  // flowchart pending
   renderConfig.pendingFlowchartNodes?.forEach((element) => {
     try {
       renderElement(
@@ -462,9 +373,7 @@ export const renderStaticSceneThrottled = throttleRAF(
   { trailing: true },
 );
 
-/**
- * Static scene is the non-ui canvas where we render elements.
- */
+/** Static scene canvas (elements). */
 export const renderStaticScene = (
   renderConfig: StaticSceneRenderConfig,
   throttle?: boolean,
@@ -473,6 +382,5 @@ export const renderStaticScene = (
     renderStaticSceneThrottled(renderConfig);
     return;
   }
-
   _renderStaticScene(renderConfig);
 };

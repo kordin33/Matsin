@@ -3,26 +3,59 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Panel Administratora — Nauczyciele</title>
+    <title>Panel Administratora &#8211; Nauczyciele</title>
     <style>
-      body { font-family: system-ui, Arial, sans-serif; margin: 24px; }
-      .row { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
-      textarea { width: 100%; height: 160px; }
-      table { border-collapse: collapse; width: 100%; margin-top: 16px; }
-      th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-      th { background: #f7f7f7; }
-      .token { font-family: monospace; }
-      .muted { color: #666; font-size: 12px; }
-      .error { color: #b00020; }
-      .success { color: #0a7a3f; }
+      body {
+        font-family: system-ui, Arial, sans-serif;
+        margin: 24px;
+      }
+      .row {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+      textarea {
+        width: 100%;
+        height: 160px;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin-top: 16px;
+      }
+      th,
+      td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+      }
+      th {
+        background: #f7f7f7;
+      }
+      .token {
+        font-family: monospace;
+      }
+      .muted {
+        color: #666;
+        font-size: 12px;
+      }
+      .error {
+        color: #b00020;
+      }
+      .success {
+        color: #0a7a3f;
+      }
     </style>
   </head>
   <body>
     <h1>Panel Administratora</h1>
-    <p class="muted">Wgraj CSV z nauczycielami i wygeneruj linki dostępu.</p>
+    <p class="muted">
+      Wgraj plik CSV z nauczycielami i wygeneruj linki dost&#281;pu.
+    </p>
 
     <div class="row">
-      <label for="adminToken">Admin token:</label>
+      <label for="adminToken">Token administratora:</label>
       <input id="adminToken" type="password" placeholder="Wpisz ADMIN_TOKEN" />
       <button id="loadTeachers">Pobierz nauczycieli</button>
     </div>
@@ -32,7 +65,10 @@
       <button id="uploadCsv">Wgraj CSV</button>
     </div>
     <div class="row">
-      <textarea id="csvText" placeholder="Lub wklej CSV tutaj (kolumny: name,email)\nJan Kowalski,jan@example.com\n..."></textarea>
+      <textarea
+        id="csvText"
+        placeholder="Lub wklej CSV tutaj (kolumny: name,email)\nJan Kowalski,jan@example.com\n..."
+      ></textarea>
     </div>
     <div id="status"></div>
 
@@ -40,7 +76,7 @@
     <table>
       <thead>
         <tr>
-          <th>Imię i nazwisko</th>
+          <th>Imi&#281; i nazwisko</th>
           <th>Email</th>
           <th>teacher_id</th>
           <th>Token</th>
@@ -52,5 +88,4 @@
 
     <script type="module" src="./admin-panel.js"></script>
   </body>
-  </html>
-
+</html>

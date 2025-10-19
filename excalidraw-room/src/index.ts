@@ -22,6 +22,7 @@ interface PermalinkRow {
   room_id: string;
   room_key: string;
   student_name: string | null;
+  teacher_id: string | null;
   created_at: string;
   last_accessed: string | null;
   is_active: boolean;
@@ -122,6 +123,9 @@ async function initDb() {
       CREATE INDEX IF NOT EXISTS idx_permalinks_room_id ON permalinks(room_id);
       CREATE INDEX IF NOT EXISTS idx_permalinks_teacher_id ON permalinks(teacher_id);
       CREATE INDEX IF NOT EXISTS idx_teachers_created_at ON teachers(created_at);
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_permalinks_teacher_student
+        ON permalinks(teacher_id, student_name)
+        WHERE student_name IS NOT NULL AND teacher_id IS NOT NULL;
     `);
     serverDebug("DB initialized or already present");
   } finally {
@@ -262,19 +266,37 @@ const isAdmin = (req: express.Request) => {
 const assertTeacherToken = async (
   teacherId: string,
   token: string,
+  opts?: { updateAccess?: boolean },
 ): Promise<boolean> => {
-  if (!pool) return false;
+  if (!pool || !teacherId || !token) {
+    return false;
+  }
   const result = await pool.query<TeacherRow>(
     `SELECT * FROM teachers WHERE teacher_id = $1 AND is_active = TRUE LIMIT 1`,
     [teacherId],
   );
   const row = result.rows[0];
-  return !!row && row.token === token;
+  if (row && row.token === token) {
+    if (opts?.updateAccess !== false) {
+      await pool.query(
+        `UPDATE teachers SET last_accessed = NOW() WHERE teacher_id = $1`,
+        [teacherId],
+      );
+    }
+    return true;
+  }
+  return false;
 };
 
 app.post("/api/permalinks", async (req, res) => {
   if (!pool) return res.status(500).json({ error: "db_unavailable" });
-  const { room_id, room_key, student_name, teacher_id } = req.body || {};
+  const {
+    room_id,
+    room_key,
+    student_name,
+    teacher_id,
+    teacher_token,
+  } = req.body || {};
   if (
     typeof room_id !== "string" ||
     typeof room_key !== "string" ||
@@ -282,16 +304,41 @@ app.post("/api/permalinks", async (req, res) => {
   ) {
     return res.status(400).json({ error: "invalid_payload" });
   }
+
+  const normalizedTeacherId =
+    typeof teacher_id === "string" && teacher_id.trim().length > 0
+      ? teacher_id.trim()
+      : null;
+  const normalizedStudentName =
+    typeof student_name === "string" && student_name.trim().length > 0
+      ? student_name.trim()
+      : null;
+
+  if (normalizedTeacherId) {
+    if (typeof teacher_token !== "string" || !teacher_token.trim()) {
+      return res.status(403).json({ error: "forbidden" });
+    }
+    const valid = await assertTeacherToken(
+      normalizedTeacherId,
+      teacher_token.trim(),
+    );
+    if (!valid) {
+      return res.status(403).json({ error: "forbidden" });
+    }
+  }
+
   const permalink = generatePermalink();
   try {
     // 1) If teacher+student provided, return existing mapping if any
-    if (teacher_id && student_name) {
+    if (normalizedTeacherId && normalizedStudentName) {
       const existingByTeacherStudent = await pool.query<{ permalink: string }>(
         `SELECT permalink FROM permalinks WHERE teacher_id = $1 AND student_name = $2 AND is_active = TRUE LIMIT 1`,
-        [teacher_id, student_name],
+        [normalizedTeacherId, normalizedStudentName],
       );
       if (existingByTeacherStudent.rows[0]?.permalink) {
-        return res.json({ permalink: existingByTeacherStudent.rows[0].permalink });
+        return res.json({
+          permalink: existingByTeacherStudent.rows[0].permalink,
+        });
       }
     }
 
@@ -307,10 +354,33 @@ app.post("/api/permalinks", async (req, res) => {
     // 3) Create a new permalink
     await pool.query(
       `INSERT INTO permalinks (permalink, room_id, room_key, student_name, teacher_id) VALUES ($1, $2, $3, $4, $5)`,
-      [permalink, room_id, room_key, student_name || null, teacher_id || null],
+      [
+        permalink,
+        room_id,
+        room_key,
+        normalizedStudentName || null,
+        normalizedTeacherId || null,
+      ],
     );
     return res.json({ permalink });
-  } catch (err) {
+  } catch (err: any) {
+    if (
+      (err?.code === "23505" || err?.constraint === "idx_permalinks_teacher_student") &&
+      normalizedTeacherId &&
+      normalizedStudentName
+    ) {
+      try {
+        const existing = await pool.query<{ permalink: string }>(
+          `SELECT permalink FROM permalinks WHERE teacher_id = $1 AND student_name = $2 AND is_active = TRUE LIMIT 1`,
+          [normalizedTeacherId, normalizedStudentName],
+        );
+        if (existing.rows[0]?.permalink) {
+          return res.json({ permalink: existing.rows[0].permalink });
+        }
+      } catch (lookupError) {
+        console.error("POST /api/permalinks lookup error", lookupError);
+      }
+    }
     console.error("POST /api/permalinks error", err);
     return res.status(500).json({ error: "internal_error" });
   }
@@ -325,8 +395,14 @@ app.get("/api/permalinks/:permalink", async (req, res) => {
       [permalink],
     );
     if (result.rows.length === 0) return res.status(404).json({ error: "not_found" });
-    await pool.query("UPDATE permalinks SET last_accessed = NOW() WHERE permalink = $1", [permalink]);
     const row = result.rows[0];
+    await pool.query("UPDATE permalinks SET last_accessed = NOW() WHERE permalink = $1", [permalink]);
+    if (row.teacher_id) {
+      await pool.query(
+        "UPDATE teachers SET last_accessed = NOW() WHERE teacher_id = $1",
+        [row.teacher_id],
+      );
+    }
     return res.json({ roomId: row.room_id, roomKey: row.room_key, studentName: row.student_name || undefined });
   } catch (err) {
     console.error("GET /api/permalinks/:permalink error", err);
@@ -334,12 +410,16 @@ app.get("/api/permalinks/:permalink", async (req, res) => {
   }
 });
 
-// List permalinks for a teacher (unprotected)
+// List permalinks for a teacher (requires teacher token)
 app.get("/api/permalinks", async (req, res) => {
   if (!pool) return res.status(500).json({ error: "db_unavailable" });
-  const teacher_id = (req.query?.teacher_id as string) || "";
+  const teacher_id = (req.query?.teacher_id as string | undefined)?.trim();
+  const token = (req.query?.token as string | undefined)?.trim();
   if (!teacher_id) return res.status(400).json({ error: "missing_teacher_id" });
+  if (!token) return res.status(403).json({ error: "forbidden" });
   try {
+    const ok = await assertTeacherToken(teacher_id, token);
+    if (!ok) return res.status(403).json({ error: "forbidden" });
     const result = await pool.query(
       `SELECT permalink, room_id, room_key, student_name, created_at, last_accessed, is_active
        FROM permalinks WHERE teacher_id = $1 AND is_active = TRUE
@@ -353,13 +433,17 @@ app.get("/api/permalinks", async (req, res) => {
   }
 });
 
-// Deactivate a permalink (unprotected teacher flow)
+// Deactivate a permalink (requires teacher token)
 app.delete("/api/permalinks/:permalink", async (req, res) => {
   if (!pool) return res.status(500).json({ error: "db_unavailable" });
   const { permalink } = req.params as { permalink: string };
-  const teacher_id = (req.query?.teacher_id as string) || "";
+  const teacher_id = (req.query?.teacher_id as string | undefined)?.trim();
+  const token = (req.query?.token as string | undefined)?.trim();
   if (!teacher_id) return res.status(400).json({ error: "missing_teacher_id" });
+  if (!token) return res.status(403).json({ error: "forbidden" });
   try {
+    const ok = await assertTeacherToken(teacher_id, token);
+    if (!ok) return res.status(403).json({ error: "forbidden" });
     await pool.query(
       `UPDATE permalinks SET is_active = FALSE WHERE permalink = $1 AND teacher_id = $2`,
       [permalink, teacher_id],
@@ -374,7 +458,8 @@ app.delete("/api/permalinks/:permalink", async (req, res) => {
 // Teacher-protected endpoints
 app.get("/api/teachers/:teacherId/permalinks", async (req, res) => {
   if (!pool) return res.status(500).json({ error: "db_unavailable" });
-  const { teacherId } = req.params as { teacherId: string };
+  const { teacherId: rawTeacherId } = req.params as { teacherId: string };
+  const teacherId = rawTeacherId.trim();
   const token = (req.query?.token as string) || "";
   if (!token) return res.status(403).json({ error: "forbidden" });
   try {
@@ -394,7 +479,11 @@ app.get("/api/teachers/:teacherId/permalinks", async (req, res) => {
 
 app.delete("/api/teachers/:teacherId/permalinks/:permalink", async (req, res) => {
   if (!pool) return res.status(500).json({ error: "db_unavailable" });
-  const { teacherId, permalink } = req.params as { teacherId: string; permalink: string };
+  const { teacherId: rawTeacherId, permalink } = req.params as {
+    teacherId: string;
+    permalink: string;
+  };
+  const teacherId = rawTeacherId.trim();
   const token = (req.query?.token as string) || "";
   if (!token) return res.status(403).json({ error: "forbidden" });
   try {

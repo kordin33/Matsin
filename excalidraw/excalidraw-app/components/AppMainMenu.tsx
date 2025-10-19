@@ -29,28 +29,22 @@ export const AppMainMenu: React.FC<{
   const [, setStudentDialog] = useAtom(studentLinkDialogStateAtom);
   return (
     <MainMenu>
-
       <MainMenu.DefaultItems.SaveAsImage />
-      {/* Tymczasowa współpraca na żywo (bez permalinka) */}
-      <MainMenu.Item
-        icon={usersIcon}
-        onClick={props.onCollabDialogOpen}
-      >
-        Współpraca (tymczasowa)
+      {/* Tymczasowa wsp\u00f3\u0142praca na \u017cywo (bez permalinka) */}
+      <MainMenu.Item icon={usersIcon} onClick={props.onCollabDialogOpen}>
+        Wsp\u00f3\u0142praca (tymczasowa)
       </MainMenu.Item>
 
-      {/* Stałe linki dla uczniów */}
+      {/* Sta\u0142e linki dla uczni\u00f3w */}
       <MainMenu.Item
         icon={usersIcon}
         onClick={() => setStudentDialog({ isOpen: true })}
       >
-        Uczniowie (stałe linki)
+        Uczniowie (sta\u0142e linki)
       </MainMenu.Item>
 
       <MainMenu.DefaultItems.ClearCanvas />
       <MainMenu.Separator />
-
-
 
       {isDevEnv() && (
         <MainMenu.Item
