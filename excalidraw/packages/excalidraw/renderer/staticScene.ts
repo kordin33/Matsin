@@ -43,11 +43,13 @@ const GridLineColor = {
   Regular: "#e5e5e5",
 } as const;
 
+const mod = (a: number, m: number) => ((a % m) + m) % m;
+
 const strokeGrid = (
   context: CanvasRenderingContext2D,
-  /** grid cell pixel size */
-  gridSize: number,
-  /** setting to 1 will disble bold lines */
+  /** grid cell size in WORLD units passed in; we'll convert to screen px */
+  gridSizeWorld: number,
+  /** draw a bold(major) line every N minor lines */
   gridStep: number,
   scrollX: number,
   scrollY: number,
@@ -55,60 +57,48 @@ const strokeGrid = (
   width: number,
   height: number,
 ) => {
-  const offsetX = (scrollX % gridSize) - gridSize;
-  const offsetY = (scrollY % gridSize) - gridSize;
-
-  const actualGridSize = gridSize * zoom.value;
-
-  const spaceWidth = 1 / zoom.value;
+  const z = zoom.value || 1;
+  const stepPx = Math.max(1, gridSizeWorld * z);
+  const offX = mod((-scrollX) * z, stepPx);
+  const offY = mod((-scrollY) * z, stepPx);
 
   context.save();
+  // crisp 1px lines in CSS px
+  context.lineWidth = 1;
+  context.setLineDash([]);
 
-  // Offset rendering by 0.5 to ensure that 1px wide lines are crisp.
-  // We only do this when zoomed to 100% because otherwise the offset is
-  // fractional, and also visibly offsets the elements.
-  // We also do this per-axis, as each axis may already be offset by 0.5.
-  if (zoom.value === 1) {
-    context.translate(offsetX % 1 ? 0 : 0.5, offsetY % 1 ? 0 : 0.5);
+  // MINOR lines
+  context.beginPath();
+  for (let x = offX; x <= width; x += stepPx) {
+    const xx = Math.floor(x) + 0.5;
+    context.moveTo(xx, 0);
+    context.lineTo(xx, height);
   }
-
-  // vertical lines
-  for (let x = offsetX; x < offsetX + width + gridSize * 2; x += gridSize) {
-    const isBold =
-      gridStep > 1 && Math.round(x - scrollX) % (gridStep * gridSize) === 0;
-    // don't render regular lines when zoomed out and they're barely visible
-    if (!isBold && actualGridSize < 10) {
-      continue;
-    }
-
-    const lineWidth = Math.min(1 / zoom.value, isBold ? 4 : 1);
-    context.lineWidth = lineWidth;
-    const lineDash = [lineWidth * 3, spaceWidth + (lineWidth + spaceWidth)];
-
-    context.beginPath();
-    context.setLineDash(isBold ? [] : lineDash);
-    context.strokeStyle = isBold ? GridLineColor.Bold : GridLineColor.Regular;
-    context.moveTo(x, offsetY - gridSize);
-    context.lineTo(x, Math.ceil(offsetY + height + gridSize * 2));
-    context.stroke();
+  for (let y = offY; y <= height; y += stepPx) {
+    const yy = Math.floor(y) + 0.5;
+    context.moveTo(0, yy);
+    context.lineTo(width, yy);
   }
+  context.strokeStyle = GridLineColor.Regular;
+  context.stroke();
 
-  for (let y = offsetY; y < offsetY + height + gridSize * 2; y += gridSize) {
-    const isBold =
-      gridStep > 1 && Math.round(y - scrollY) % (gridStep * gridSize) === 0;
-    if (!isBold && actualGridSize < 10) {
-      continue;
-    }
-
-    const lineWidth = Math.min(1 / zoom.value, isBold ? 4 : 1);
-    context.lineWidth = lineWidth;
-    const lineDash = [lineWidth * 3, spaceWidth + (lineWidth + spaceWidth)];
-
+  // MAJOR lines (every gridStep minors)
+  if (gridStep > 1) {
     context.beginPath();
-    context.setLineDash(isBold ? [] : lineDash);
-    context.strokeStyle = isBold ? GridLineColor.Bold : GridLineColor.Regular;
-    context.moveTo(offsetX - gridSize, y);
-    context.lineTo(Math.ceil(offsetX + width + gridSize * 2), y);
+    const majorStepPx = stepPx * gridStep;
+    const offXM = mod((-scrollX) * z, majorStepPx);
+    const offYM = mod((-scrollY) * z, majorStepPx);
+    for (let x = offXM; x <= width; x += majorStepPx) {
+      const xx = Math.floor(x) + 0.5;
+      context.moveTo(xx, 0);
+      context.lineTo(xx, height);
+    }
+    for (let y = offYM; y <= height; y += majorStepPx) {
+      const yy = Math.floor(y) + 0.5;
+      context.moveTo(0, yy);
+      context.lineTo(width, yy);
+    }
+    context.strokeStyle = GridLineColor.Bold;
     context.stroke();
   }
   context.restore();
@@ -245,26 +235,16 @@ const _renderStaticScene = ({
   // aby siatka była zakotwiczona w world space (jak w Idroo)
   if (renderGrid && appState.gridModeEnabled) {
     const z = appState.zoom.value || 1;
-    // keep grid spacing constant in screen px (like Miro/Idroo),
-    // convert desired px spacing to world units by dividing by zoom
     const worldGridSize = Math.max(1, appState.gridSize / z);
-    renderInfiniteGrid(
+    strokeGrid(
       context,
+      worldGridSize,
+      Math.max(1, appState.gridStep),
+      appState.scrollX,
+      appState.scrollY,
+      appState.zoom,
       normalizedWidth,
       normalizedHeight,
-      {
-        scrollX: appState.scrollX,
-        scrollY: appState.scrollY,
-        zoom: appState.zoom,
-        style: GridStyle.LINES,
-        size: worldGridSize,
-        color: appState.theme === "dark" ? "#404040" : "#4a4a4a",
-        opacity: 0.6,
-        lineWidth: Math.max(1 / z, 0.5),
-        majorGridMultiplier: Math.max(1, appState.gridStep),
-        majorLineWidth: Math.max(1.5 / z, 0.75),
-        majorColor: appState.theme === "dark" ? "#606060" : "#6a6a6a",
-      }
     );
   }
 

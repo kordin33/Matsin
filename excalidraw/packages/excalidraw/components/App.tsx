@@ -836,8 +836,9 @@ class App extends React.Component<AppProps, AppState> {
    * If disabled, returns null.
    */
   public getEffectiveGridSize = () => {
+    const z = this.state.zoom.value || 1;
     return (
-      isGridModeEnabled(this) ? this.state.gridSize : null
+      isGridModeEnabled(this) ? this.state.gridSize / z : null
     ) as NullableGridSize;
   };
 

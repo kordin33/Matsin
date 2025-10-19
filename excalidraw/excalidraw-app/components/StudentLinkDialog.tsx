@@ -235,7 +235,7 @@ export const StudentLinkDialog = ({
   const studentCountLabel = studentLinks.length.toString().padStart(2, "0");
 
   return (
-    <Dialog size="medium" onCloseRequest={handleClose} title={false}>
+    <Dialog size="regular" onCloseRequest={handleClose} title={false}>
       <div className="StudentLinkDialog">
         <header className="StudentLinkDialog__header">
           <span className="StudentLinkDialog__headerIcon">{usersIcon}</span>

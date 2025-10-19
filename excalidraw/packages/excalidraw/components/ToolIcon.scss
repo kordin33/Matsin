@@ -54,6 +54,13 @@
       width: var(--default-icon-size);
       height: var(--default-icon-size);
       color: var(--icon-fill-color);
+      fill: none; // wymuś konturowe ikony w toolbarze
+      
+      // Zabezpieczenie przed nadpisaniem przez wewnętrzne elementy
+      // (np. <path>, <rect>, <circle>):
+      & * {
+        fill: none !important;
+      }
     }
   }
 

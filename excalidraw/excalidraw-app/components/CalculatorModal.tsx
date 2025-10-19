@@ -1,129 +1,182 @@
-// CalculatorModal.tsx
-import React, { useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { t } from '@excalidraw/excalidraw/i18n';
-import Calculator from './Calculator';
-import './CalculatorModal.scss';
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { t } from "@excalidraw/excalidraw/i18n";
+
+import Calculator from "./Calculator";
+
+import "./CalculatorModal.scss";
 
 interface CalculatorModalProps {
   visible: boolean;
   onUpdateVisible: (visible: boolean) => void;
 }
 
-const startPos = { x: 0, y: 0 };
+const INITIAL_POSITION = { x: 24, y: 24 };
+const BASE_WIDTH = 320;
+const BASE_HEIGHT = 420;
+const VIEWPORT_PADDING = 12;
+const GRID_STEP = 16;
 
 const CalculatorModal: React.FC<CalculatorModalProps> = ({ visible, onUpdateVisible }) => {
-  const [position, setPosition] = useState(startPos);
+  const [position, setPosition] = useState(INITIAL_POSITION);
   const [dragging, setDragging] = useState(false);
   const dragOffset = useRef({ x: 0, y: 0 });
   const winRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
 
-  const BASE_WIDTH = 380; // must match CSS
-
-  const measureAndScale = () => {
+  const measureAndScale = useCallback(() => {
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     const rect = winRef.current?.getBoundingClientRect();
-    const assumedHeight = rect?.height || 520;
-    const s = Math.min(1, (vw - 24) / BASE_WIDTH, (vh - 24) / assumedHeight);
-    setScale(Math.max(0.6, s));
-  };
+    const assumedHeight = rect?.height || BASE_HEIGHT;
+    const nextScale = Math.min(
+      1,
+      (vw - VIEWPORT_PADDING * 2) / BASE_WIDTH,
+      (vh - VIEWPORT_PADDING * 2) / assumedHeight,
+    );
+    setScale(Math.max(0.75, nextScale));
+  }, []);
+
+  const clampToViewport = useCallback(
+    (rawX: number, rawY: number) => {
+      const rect = winRef.current?.getBoundingClientRect();
+      const width = rect?.width ?? BASE_WIDTH * scale;
+      const height = rect?.height ?? BASE_HEIGHT * scale;
+      const maxX = Math.max(VIEWPORT_PADDING, window.innerWidth - width - VIEWPORT_PADDING);
+      const maxY = Math.max(VIEWPORT_PADDING, window.innerHeight - height - VIEWPORT_PADDING);
+      const clamp = (value: number, maxValue: number) =>
+        Math.min(maxValue, Math.max(VIEWPORT_PADDING, value));
+      const snappedX = Math.round(clamp(rawX, maxX) / GRID_STEP) * GRID_STEP;
+      const snappedY = Math.round(clamp(rawY, maxY) / GRID_STEP) * GRID_STEP;
+      return {
+        x: Math.min(maxX, Math.max(VIEWPORT_PADDING, snappedX)),
+        y: Math.min(maxY, Math.max(VIEWPORT_PADDING, snappedY)),
+      };
+    },
+    [scale],
+  );
 
   useEffect(() => {
     if (visible) {
-      // center roughly on open
       measureAndScale();
       const vw = window.innerWidth;
       const vh = window.innerHeight;
-      const width = BASE_WIDTH;
-      const height = 460;
-      setPosition({ x: Math.max(16, (vw - width) / 2), y: Math.max(16, (vh - height) / 3) });
+      const width = BASE_WIDTH * scale;
+      const height = BASE_HEIGHT * scale;
+      setPosition(clampToViewport((vw - width) / 2, (vh - height) / 3));
     }
-  }, [visible]);
+  }, [visible, clampToViewport, measureAndScale, scale]);
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onUpdateVisible(false);
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onUpdateVisible(false);
+      }
     };
+
     if (visible) {
-      document.addEventListener('keydown', onKey);
-      window.addEventListener('resize', measureAndScale);
+      document.addEventListener("keydown", onKey);
+      window.addEventListener("resize", measureAndScale);
       return () => {
-        document.removeEventListener('keydown', onKey);
-        window.removeEventListener('resize', measureAndScale);
+        document.removeEventListener("keydown", onKey);
+        window.removeEventListener("resize", measureAndScale);
       };
     }
-  }, [visible, onUpdateVisible]);
+  }, [visible, onUpdateVisible, measureAndScale]);
 
-  const onMouseDownHeader = (e: React.MouseEvent) => {
+  const beginDrag = (clientX: number, clientY: number) => {
     setDragging(true);
     const rect = winRef.current?.getBoundingClientRect();
-    const startX = e.clientX - (rect?.left ?? 0);
-    const startY = e.clientY - (rect?.top ?? 0);
-    dragOffset.current = { x: startX, y: startY };
-    window.addEventListener('mousemove', onMouseMove as any);
-    window.addEventListener('mouseup', onMouseUp as any);
+    dragOffset.current = {
+      x: clientX - (rect?.left ?? 0),
+      y: clientY - (rect?.top ?? 0),
+    };
   };
 
-  const onTouchStartHeader = (e: React.TouchEvent) => {
-    const t = e.touches[0];
-    setDragging(true);
-    const rect = winRef.current?.getBoundingClientRect();
-    const startX = t.clientX - (rect?.left ?? 0);
-    const startY = t.clientY - (rect?.top ?? 0);
-    dragOffset.current = { x: startX, y: startY };
-    window.addEventListener('touchmove', onTouchMove as any, { passive: false as any });
-    window.addEventListener('touchend', onTouchEnd as any);
+  const handlePointerMove = (clientX: number, clientY: number) => {
+    if (!dragging) {
+      return;
+    }
+    const x = clientX - dragOffset.current.x;
+    const y = clientY - dragOffset.current.y;
+    setPosition(clampToViewport(x, y));
   };
 
-  const onMouseMove = (e: MouseEvent) => {
-    if (!dragging) return;
-    const x = Math.max(8, e.clientX - dragOffset.current.x);
-    const y = Math.max(8, e.clientY - dragOffset.current.y);
-    setPosition({ x, y });
+  const handleMouseDown = (event: React.MouseEvent) => {
+    event.preventDefault();
+    beginDrag(event.clientX, event.clientY);
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+  };
+
+  const handleTouchStart = (event: React.TouchEvent) => {
+    const touch = event.touches[0];
+    beginDrag(touch.clientX, touch.clientY);
+    window.addEventListener("touchmove", onTouchMove, { passive: false });
+    window.addEventListener("touchend", onTouchEnd);
+  };
+
+  const onMouseMove = (event: MouseEvent) => {
+    handlePointerMove(event.clientX, event.clientY);
+  };
+
+  const onTouchMove = (event: TouchEvent) => {
+    const touch = event.touches[0];
+    handlePointerMove(touch.clientX, touch.clientY);
+    event.preventDefault();
+  };
+
+  const stopDragging = () => {
+    setDragging(false);
+    window.removeEventListener("mousemove", onMouseMove);
+    window.removeEventListener("mouseup", onMouseUp);
+    window.removeEventListener("touchmove", onTouchMove);
+    window.removeEventListener("touchend", onTouchEnd);
   };
 
   const onMouseUp = () => {
-    setDragging(false);
-    window.removeEventListener('mousemove', onMouseMove as any);
-    window.removeEventListener('mouseup', onMouseUp as any);
-  };
-
-  const onTouchMove = (e: TouchEvent) => {
-    if (!dragging) return;
-    const t = e.touches[0];
-    const x = Math.max(8, t.clientX - dragOffset.current.x);
-    const y = Math.max(8, t.clientY - dragOffset.current.y);
-    setPosition({ x, y });
-    e.preventDefault();
+    stopDragging();
   };
 
   const onTouchEnd = () => {
-    setDragging(false);
-    window.removeEventListener('touchmove', onTouchMove as any);
-    window.removeEventListener('touchend', onTouchEnd as any);
+    stopDragging();
   };
 
-  if (!visible) return null;
+  if (!visible) {
+    return null;
+  }
 
   return createPortal(
     <div
-      className={`calc-window calculator-modal`}
+      className={`calc-window calculator-modal${dragging ? " is-dragging" : ""}`}
       ref={winRef}
-      style={{ transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`, transformOrigin: 'top left' }}
+      style={{
+        transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
+        transformOrigin: "top left",
+      }}
       role="dialog"
-      aria-label={t('buttons.calculator') || 'Calculator'}
+      aria-label={t("buttons.calculator") || "Calculator"}
     >
-      <div className="calc-header" onMouseDown={onMouseDownHeader} onTouchStart={onTouchStartHeader}>
-        <div className="calc-title">{t('buttons.calculator') || 'Calculator'}</div>
-        <button className="calc-close" onClick={() => onUpdateVisible(false)} aria-label="Close">×</button>
+      <div
+        className="calc-header"
+        onMouseDown={handleMouseDown}
+        onTouchStart={handleTouchStart}
+      >
+        <div className="calc-title">{t("buttons.calculator") || "Calculator"}</div>
+        <button
+          className="calc-close"
+          onClick={() => onUpdateVisible(false)}
+          aria-label="Close calculator"
+          type="button"
+        >
+          &times;
+        </button>
       </div>
       <div className="calc-body">
         <Calculator onClose={() => onUpdateVisible(false)} />
       </div>
     </div>,
-    document.body
+    document.body,
   );
 };
 

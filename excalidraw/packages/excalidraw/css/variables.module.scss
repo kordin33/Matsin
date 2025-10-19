@@ -12,10 +12,8 @@
     .ToolIcon_type_checkbox {
       &:checked + .ToolIcon__icon {
         --icon-fill-color: var(--color-on-primary-container);
-
-        svg {
-          fill: var(--icon-fill-color);
-        }
+        // Nie wypełniaj ikon po zaznaczeniu; pozostaw kontur
+        // (kolor obrysu ustawiany jest niżej przez `color`)
       }
     }
   }

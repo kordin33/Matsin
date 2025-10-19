@@ -8,13 +8,107 @@
   --grad-start: rgba(255, 209, 220, 0.50); /* light pink */
   --grad-end: rgba(249, 161, 181, 0.35);
   --icon-color: #d46a85;
+  --toolbar-button-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.62));
+  --toolbar-button-bg-hover: linear-gradient(145deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.72));
+  --toolbar-button-bg-active: linear-gradient(145deg, rgba(249, 161, 181, 0.9), rgba(230, 126, 149, 0.9));
+  --toolbar-button-border: rgba(255, 255, 255, 0.55);
+  --toolbar-button-shadow: 0 10px 24px rgba(212, 106, 133, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  --toolbar-button-shadow-strong: 0 14px 32px rgba(212, 106, 133, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  --toolbar-icon-color: #9f3958;
+  --icon-fill-color: var(--toolbar-icon-color);
 
   --color-primary-contrast-offset: #625ee0; // to offset Chubb illusion
+
+  .ToolIcon__icon {
+    background: var(--toolbar-button-bg);
+    border: 1px solid var(--toolbar-button-border);
+    border-radius: 999px;
+    box-shadow: var(--toolbar-button-shadow);
+    color: var(--toolbar-icon-color);
+    transition:
+      background 0.2s ease,
+      box-shadow 0.2s ease,
+      transform 0.15s ease,
+      color 0.2s ease;
+
+    svg {
+      color: inherit;
+      transition: color 0.2s ease;
+    }
+  }
+
+  .ToolIcon_type_button:hover .ToolIcon__icon,
+  .ToolIcon__icon:hover {
+    background: var(--toolbar-button-bg-hover);
+    box-shadow: var(--toolbar-button-shadow-strong);
+  }
+
+  .ToolIcon_type_button:active .ToolIcon__icon {
+    transform: translateY(1px);
+  }
+
+  .ToolIcon_type_button:disabled .ToolIcon__icon {
+    background: rgba(255, 255, 255, 0.35);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    color: rgba(148, 163, 184, 0.6);
+  }
+
+  .ToolIcon--selected .ToolIcon__icon {
+    background: var(--toolbar-button-bg-active);
+    color: #ffffff;
+    box-shadow: var(--toolbar-button-shadow-strong);
+
+    svg {
+      color: #ffffff;
+    }
+  }
+
+  .zoom-actions,
+  .undo-redo-buttons {
+    background: var(--toolbar-button-bg) !important;
+    border: 1px solid var(--toolbar-button-border) !important;
+    border-radius: 999px !important;
+    padding: 6px !important;
+    gap: 6px !important;
+    box-shadow: var(--toolbar-button-shadow);
+    backdrop-filter: blur(16px) saturate(160%);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+  }
+
+  .zoom-button,
+  .undo-redo-buttons button {
+    background: transparent !important;
+    border: none !important;
+    border-radius: 999px !important;
+    overflow: hidden;
+  }
+
+  .zoom-actions .ToolIcon__icon,
+  .undo-redo-buttons .ToolIcon__icon {
+    width: 44px;
+    height: 44px;
+  }
+
+  .zoom-actions .reset-zoom-button {
+    min-width: 72px !important;
+    font-weight: 600 !important;
+    color: var(--toolbar-icon-color) !important;
+  }
 
   &.theme--dark {
     --grad-start: rgba(255, 107, 107, 0.28); /* subtle red */
     --grad-end: rgba(255, 61, 61, 0.18);
     --icon-color: #ff6b6b;
+    --toolbar-button-bg: linear-gradient(145deg, rgba(40, 39, 58, 0.86), rgba(40, 39, 58, 0.68));
+    --toolbar-button-bg-hover: linear-gradient(145deg, rgba(65, 64, 92, 0.96), rgba(55, 54, 78, 0.82));
+    --toolbar-button-bg-active: linear-gradient(145deg, rgba(144, 97, 255, 0.88), rgba(115, 76, 214, 0.88));
+    --toolbar-button-border: rgba(255, 255, 255, 0.22);
+    --toolbar-button-shadow: 0 12px 28px rgba(15, 23, 42, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    --toolbar-button-shadow-strong: 0 18px 40px rgba(17, 24, 39, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.16);
+    --toolbar-icon-color: #f8fafc;
+    --icon-fill-color: var(--toolbar-icon-color);
     --color-primary-contrast-offset: #726dff; // to offset Chubb illusion
   }
 
