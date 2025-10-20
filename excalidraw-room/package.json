@@ -1,5 +1,21 @@
 {
-<<<<<<< HEAD
+  "name": "excalidraw-portal",
+  "version": "1.0.0",
+  "description": "Excalidraw collaboration server (TypeScript)",
+  "main": "dist/index.js",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "start:dev": "cross-env NODE_ENV=development ts-node-dev --respawn --transpile-only src/index.ts",
+    "test": "yarn test:other && yarn test:code",
+    "test:code": "eslint --ext .ts .",
+    "test:other": "yarn prettier --list-different",
+    "fix": "yarn fix:other && yarn fix:code",
+    "fix:code": "yarn test:code --fix",
+    "fix:other": "yarn prettier --write",
+    "prettier": "prettier . --ignore-path=.gitignore"
+  },
   "dependencies": {
     "@excalidraw/eslint-config": "1.0.1",
     "@excalidraw/prettier-config": "1.0.2",
@@ -22,44 +38,8 @@
     "ts-node-dev": "^1.1.8",
     "typescript": "4.2.3"
   },
-  "license": "MIT",
-  "main": "dist/index.js",
-  "name": "excalidraw-portal",
-  "prettier": "@excalidraw/prettier-config",
-  "scripts": {
-    "build": "tsc",
-    "fix:code": "yarn test:code --fix",
-    "fix:other": "yarn prettier --write",
-    "fix": "yarn fix:other && yarn fix:code",
-    "prettier": "prettier . --ignore-path=.gitignore",
-    "start": "node dist/index.js",
-    "start:dev": "cross-env NODE_ENV=development ts-node-dev --respawn --transpile-only src/index.ts",
-    "test:code": "eslint --ext .ts .",
-    "test:other": "yarn prettier --list-different",
-    "test": "yarn test:other && yarn test:code"
-  },
-  "version": "1.0.0"
-}
-=======
-  "name": "excalidraw-collaboration-server",
-  "version": "1.0.0",
-  "description": "WebSocket server for Excalidraw collaboration",
-  "main": "src/index.js",
-  "scripts": {
-    "start": "node src/index.js",
-    "dev": "nodemon src/index.js",
-    "build": "echo 'No build step required'"
-  },
-  "dependencies": {
-    "socket.io": "^4.7.2",
-    "cors": "^2.8.5",
-    "express": "^4.18.2"
-  },
-  "devDependencies": {
-    "nodemon": "^3.0.1"
-  },
   "engines": {
-    "node": ">=16.0.0"
-  }
+    "node": ">=18.0.0"
+  },
+  "prettier": "@excalidraw/prettier-config"
 }
->>>>>>> 38c552b4746e54cbc4c77d3663140e43cceb036c
