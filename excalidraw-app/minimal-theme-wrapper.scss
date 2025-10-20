@@ -1,0 +1,200 @@
+/* Global reset for full-screen wrapper */
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Hide debug elements */
+.excalidraw-minimal-wrapper .DebugCanvas,
+.excalidraw-minimal-wrapper .debug-stats {
+  display: none !important;
+}
+
+/* Main wrapper - full screen */
+.excalidraw-minimal-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.excalidraw-minimal-wrapper .excalidraw {
+  width: 100%;
+  height: 100%;
+}
+
+.excalidraw-minimal-wrapper .excalidraw .App {
+  width: 100%;
+  height: 100%;
+}
+
+.excalidraw-minimal-wrapper .excalidraw .App-content {
+  width: 100%;
+  height: 100%;
+}
+
+/* CSS Variables for glass effect */
+.excalidraw-minimal-wrapper {
+  --glass-bg: rgba(255, 255, 255, 0.08);
+  --glass-border: rgba(255, 255, 255, 0.18);
+  --glass-tint: rgba(255, 255, 255, 0.1);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
+  --glass-radius: 12px;
+  --brand-primary: #6366f1;
+  --brand-secondary: #8b5cf6;
+  --surface-primary: rgba(255, 255, 255, 0.95);
+  --surface-secondary: rgba(248, 250, 252, 0.9);
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --border-light: rgba(226, 232, 240, 0.8);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+  --default-icon-size: 1.25rem;
+  --border-radius-md: 10px;
+  --border-radius-lg: 14px;
+}
+
+/* Toolbar */
+.excalidraw-minimal-wrapper .excalidraw .App-toolbar {
+  background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.05)),
+              radial-gradient(120% 100% at 0% 0%, var(--glass-tint), transparent 60%),
+              var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(30px) saturate(1.6);
+  -webkit-backdrop-filter: blur(30px) saturate(1.6);
+  position: relative;
+  overflow: clip;
+}
+
+/* Tool buttons */
+.excalidraw-minimal-wrapper .excalidraw .ToolIcon {
+  background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.05)),
+              radial-gradient(120% 100% at 0% 0%, var(--glass-tint), transparent 60%),
+              var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(30px) saturate(1.6);
+  -webkit-backdrop-filter: blur(30px) saturate(1.6);
+  position: relative;
+  overflow: clip;
+}
+
+/* Dropdown menu */
+.excalidraw-minimal-wrapper .dropdown-menu {
+  background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.05)),
+              radial-gradient(120% 100% at 0% 0%, var(--glass-tint), transparent 60%),
+              var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(30px) saturate(1.6);
+  -webkit-backdrop-filter: blur(30px) saturate(1.6);
+  position: absolute !important; /* keep menu out of layout flow */
+  top: 100% !important; /* align under trigger */
+  margin-top: 0.5rem !important;
+  overflow: visible; /* avoid clipping */
+}
+
+/* Island components (dropdown containers) */
+.excalidraw-minimal-wrapper .Island {
+  background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.05)),
+              radial-gradient(120% 100% at 0% 0%, var(--glass-tint), transparent 60%),
+              var(--glass-bg) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--glass-radius) !important;
+  box-shadow: var(--glass-shadow) !important;
+  backdrop-filter: blur(30px) saturate(1.6) !important;
+  -webkit-backdrop-filter: blur(30px) saturate(1.6) !important;
+  position: relative;
+  overflow: clip;
+}
+
+/* Dropdown menu container specifically */
+.excalidraw-minimal-wrapper .dropdown-menu-container {
+  background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.05)),
+              radial-gradient(120% 100% at 0% 0%, var(--glass-tint), transparent 60%),
+              var(--glass-bg) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--glass-radius) !important;
+  box-shadow: var(--glass-shadow) !important;
+  backdrop-filter: blur(30px) saturate(1.6) !important;
+  -webkit-backdrop-filter: blur(30px) saturate(1.6) !important;
+  position: static !important; /* prevent affecting toolbar layout */
+}
+
+/* Modal content */
+.excalidraw-minimal-wrapper .Modal__content {
+  background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.05)),
+              radial-gradient(120% 100% at 0% 0%, var(--glass-tint), transparent 60%),
+              var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(30px) saturate(1.6);
+  -webkit-backdrop-filter: blur(30px) saturate(1.6);
+  position: relative;
+  overflow: clip;
+}
+
+/* Text inputs */
+.excalidraw-minimal-wrapper input[type="text"],
+.excalidraw-minimal-wrapper input[type="number"],
+.excalidraw-minimal-wrapper textarea {
+  background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.05)),
+              radial-gradient(120% 100% at 0% 0%, var(--glass-tint), transparent 60%),
+              var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(30px) saturate(1.6);
+  -webkit-backdrop-filter: blur(30px) saturate(1.6);
+  position: relative;
+  overflow: clip;
+}
+
+/* Scrollbars */
+.excalidraw-minimal-wrapper ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.excalidraw-minimal-wrapper ::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.excalidraw-minimal-wrapper ::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.05)),
+              radial-gradient(120% 100% at 0% 0%, var(--glass-tint), transparent 60%),
+              var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(30px) saturate(1.6);
+  -webkit-backdrop-filter: blur(30px) saturate(1.6);
+  position: relative;
+  overflow: clip;
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  .excalidraw-minimal-wrapper {
+    --glass-bg: rgba(0, 0, 0, 0.15);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-tint: rgba(255, 255, 255, 0.05);
+    --surface-primary: rgba(15, 23, 42, 0.95);
+    --surface-secondary: rgba(30, 41, 59, 0.9);
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+  }
+}

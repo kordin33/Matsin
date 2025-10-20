@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
   "dependencies": {
     "@excalidraw/eslint-config": "1.0.1",
     "@excalidraw/prettier-config": "1.0.2",
@@ -39,3 +40,26 @@
   },
   "version": "1.0.0"
 }
+=======
+  "name": "excalidraw-collaboration-server",
+  "version": "1.0.0",
+  "description": "WebSocket server for Excalidraw collaboration",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "build": "echo 'No build step required'"
+  },
+  "dependencies": {
+    "socket.io": "^4.7.2",
+    "cors": "^2.8.5",
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
+>>>>>>> 38c552b4746e54cbc4c77d3663140e43cceb036c

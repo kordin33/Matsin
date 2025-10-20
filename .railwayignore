@@ -1,0 +1,18 @@
+.git
+.gitignore
+.qoder
+node_modules
+**/node_modules
+dist
+build
+.cache
+.next
+.turbo
+coverage
+tmp
+temp
+.vscode
+.idea
+*.log
+# retain necessary production artifacts
+!excalidraw/excalidraw-app/build/**
