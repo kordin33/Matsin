@@ -1,0 +1,33 @@
+# Dependency directories
+node_modules/
+**/node_modules/
+
+# Build artifacts
+dist/
+build/
+.next/
+.turbo/
+coverage/
+tmp/
+temp/
+
+# Logs
+*.log
+logs/
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Runtime files
+.cache/
+.parcel-cache/
+
+# Environment configs (copy from templates if needed)
+.env
+.env.local
+.env.*.local
+
+# Railway uploads should ignore everything else via .railwayignore
