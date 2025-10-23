@@ -1,4 +1,4 @@
-import {
+﻿import {
   CaptureUpdateAction,
   getSceneVersion,
   restoreElements,
@@ -533,7 +533,7 @@ class Collab extends PureComponent<CollabProps, CollabState> {
 
     try {
       this.portal.socket = this.portal.open(
-        socketIOClient(import.meta.env.VITE_APP_WS_SERVER_URL, {
+        socketIOClient(((import.meta as any)?.env?.VITE_APP_WS_SERVER_URL || (import.meta as any)?.env?.VITE_APP_BACKEND_URL || (typeof window !== 'undefined' ? window.location.origin : '')), {
           transports: ["websocket", "polling"],
         }),
         roomId,
@@ -1060,3 +1060,4 @@ if (isTestEnv() || isDevEnv()) {
 export default Collab;
 
 export type TCollabClass = Collab;
+
