@@ -60,8 +60,7 @@ require("dotenv").config(
 
 const app = express();
 app.use(cors({ origin: process.env.CORS_ORIGIN || "*", credentials: true }));
-const port =
-  process.env.PORT || (process.env.NODE_ENV !== "development" ? 80 : 3002); // default port to listen
+const port = Number(process.env.PORT || 3002); // default port to listen
 
 // Middleware
 app.use(express.json({ limit: "2mb" }));
