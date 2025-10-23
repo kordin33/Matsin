@@ -1,10 +1,10 @@
-import type { SyncableExcalidrawElement } from "./index";
+﻿import type { SyncableExcalidrawElement } from "./index";
 
 const getServerUrl = () => {
   if (typeof window !== 'undefined') {
-    return import.meta.env.VITE_APP_BACKEND_URL || 'http://localhost:3002';
+    return import.meta.env.VITE_APP_BACKEND_URL || window.location.origin;
   }
-  return process.env.BACKEND_URL || 'http://localhost:3002';
+  return process.env.BACKEND_URL || 'http://localhost';
 };
 
 export interface ApiScene {
@@ -155,3 +155,4 @@ class ApiClient {
 }
 
 export const apiClient = new ApiClient();
+
