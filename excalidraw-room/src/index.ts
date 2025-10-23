@@ -591,6 +591,11 @@ app.get("/", (req, res) => {
 const server = http.createServer(app);
 
 server.listen(port, () => {
+  console.log(
+    `[websocket] listening on port ${port}, cors origins: ${
+      computedOrigins === true ? "*" : computedOrigins
+    }`,
+  );
   serverDebug(`listening on port: ${port}`);
 });
 
@@ -707,4 +712,5 @@ try {
 } catch (error) {
   console.error(error);
 }
+
 
