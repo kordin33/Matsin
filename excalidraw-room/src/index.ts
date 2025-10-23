@@ -1,6 +1,6 @@
-import debug from "debug";
+﻿import debug from "debug";
 import express from "express";
-import cors from "cors";
+import cors, { CorsOptions } from "cors";
 import http from "http";
 import { Server as SocketIO } from "socket.io";
 import { Pool } from "pg";
@@ -69,15 +69,16 @@ const computedOrigins =
         .map((origin) => origin.trim())
         .filter(Boolean);
 
-const corsOptions: cors.CorsOptions = {
+const corsOptions: CorsOptions = {
   origin: computedOrigins,
   credentials: true,
   methods: ["GET", "POST", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "x-admin-token"],
 };
 
-app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
+const corsMiddleware = cors(corsOptions);
+app.use(corsMiddleware);
+app.options("*", corsMiddleware);
 const port = Number(process.env.PORT || 3002); // default port to listen
 
 // Middleware
@@ -706,3 +707,4 @@ try {
 } catch (error) {
   console.error(error);
 }
+
