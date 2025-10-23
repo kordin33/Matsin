@@ -1,4 +1,4 @@
-import {
+﻿import {
   Excalidraw,
   TTDDialogTrigger,
   CaptureUpdateAction,
@@ -422,7 +422,7 @@ const ExcalidrawWrapper = () => {
 
   const [, setShareDialogState] = useAtom(shareDialogStateAtom);
   const [collabAPI] = useAtom(collabAPIAtom);
-  const [studentDialogState, setStudentDialogState] = useAtom(studentLinkDialogStateAtom);
+  const [studentDialogState, setStudentDialogState] = useAtom(studentLinkDialogStateAtom);\n  // Auto-open teacher panel if link contains teacher or token\n  useEffect(() => {\n    try {\n      const url = new URL(window.location.href);\n      if (url.searchParams.get('teacher') || url.searchParams.get('t') || url.searchParams.get('token')) {\n        setStudentDialogState({ isOpen: true });\n      }\n    } catch {}\n  }, [setStudentDialogState]);\n
   const [isCollaborating] = useAtomWithInitialValue(isCollaboratingAtom, () => {
     return isCollaborationLink(window.location.href);
   });
@@ -1014,7 +1014,7 @@ const ExcalidrawWrapper = () => {
                 "numbers",
                 "scientific",
               ],
-              icon: <span style={{ fontSize: "14px" }}>🧮</span>,
+              icon: <span style={{ fontSize: "14px" }}>đź§®</span>,
               perform: () => {
                 setIsCalculatorOpen(true);
               },
@@ -1241,3 +1241,4 @@ const ExcalidrawApp = () => {
 };
 
 export default ExcalidrawApp;
+
