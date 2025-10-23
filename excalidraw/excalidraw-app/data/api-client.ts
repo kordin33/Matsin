@@ -2,7 +2,7 @@
 
 const getServerUrl = () => {
   if (typeof window !== 'undefined') {
-    return import.meta.env.VITE_APP_BACKEND_URL || window.location.origin;
+    return import.meta.env.VITE_APP_BACKEND_URL || 'https://websocket-production-e339.up.railway.app';
   }
   return process.env.BACKEND_URL || 'http://localhost';
 };
@@ -155,4 +155,5 @@ class ApiClient {
 }
 
 export const apiClient = new ApiClient();
+
 
