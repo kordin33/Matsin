@@ -59,7 +59,25 @@ require("dotenv").config(
 );
 
 const app = express();
-app.use(cors({ origin: process.env.CORS_ORIGIN || "*", credentials: true }));
+
+const rawCorsOrigin = process.env.CORS_ORIGIN || "*";
+const computedOrigins =
+  rawCorsOrigin === "*"
+    ? true
+    : rawCorsOrigin
+        .split(",")
+        .map((origin) => origin.trim())
+        .filter(Boolean);
+
+const corsOptions: cors.CorsOptions = {
+  origin: computedOrigins,
+  credentials: true,
+  methods: ["GET", "POST", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "x-admin-token"],
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 const port = Number(process.env.PORT || 3002); // default port to listen
 
 // Middleware
@@ -579,8 +597,8 @@ try {
   const io = new SocketIO(server, {
     transports: ["websocket", "polling"],
     cors: {
-      allowedHeaders: ["Content-Type", "Authorization"],
-      origin: process.env.CORS_ORIGIN || "*",
+      allowedHeaders: ["Content-Type", "Authorization", "x-admin-token"],
+      origin: computedOrigins,
       credentials: true,
     },
     allowEIO3: true,

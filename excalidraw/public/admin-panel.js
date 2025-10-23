@@ -1,4 +1,21 @@
-﻿const BACKEND_BASE = "https://websocket-production-e339.up.railway.app";
+﻿const currentUrl = new URL(window.location.href);
+let storedBackend = localStorage.getItem("adminBackend");
+let backendParam = currentUrl.searchParams.get("backend");
+
+if (backendParam) {
+  try {
+    const parsed = new URL(backendParam);
+    storedBackend = parsed.origin;
+    localStorage.setItem("adminBackend", storedBackend);
+  } catch (_err) {
+    console.warn("Nieprawidłowy adres backendu w parametrze ?backend=", backendParam);
+  }
+}
+
+let backendBase = storedBackend || window.location.origin;
+backendBase = backendBase.replace(/\/$/, "");
+
+const BACKEND_BASE = backendBase;
 
 const qs = (s) => document.querySelector(s);
 const statusEl = qs('#status');
@@ -140,3 +157,4 @@ qs('#teachersTable')?.addEventListener('click', async (event) => {
     }
   }
 });
+
