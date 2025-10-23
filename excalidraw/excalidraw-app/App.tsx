@@ -422,7 +422,21 @@ const ExcalidrawWrapper = () => {
 
   const [, setShareDialogState] = useAtom(shareDialogStateAtom);
   const [collabAPI] = useAtom(collabAPIAtom);
-  const [studentDialogState, setStudentDialogState] = useAtom(studentLinkDialogStateAtom);\n  // Auto-open teacher panel if link contains teacher or token\n  useEffect(() => {\n    try {\n      const url = new URL(window.location.href);\n      if (url.searchParams.get('teacher') || url.searchParams.get('t') || url.searchParams.get('token')) {\n        setStudentDialogState({ isOpen: true });\n      }\n    } catch {}\n  }, [setStudentDialogState]);\n
+  const [studentDialogState, setStudentDialogState] = useAtom(studentLinkDialogStateAtom);
+
+// Auto-open teacher panel if link contains teacher or token
+useEffect(() => {
+  try {
+    const url = new URL(window.location.href);
+    if (
+      url.searchParams.get("teacher") ||
+      url.searchParams.get("t") ||
+      url.searchParams.get("token")
+    ) {
+      setStudentDialogState({ isOpen: true });
+    }
+  } catch {}
+}, [setStudentDialogState]);
   const [isCollaborating] = useAtomWithInitialValue(isCollaboratingAtom, () => {
     return isCollaborationLink(window.location.href);
   });
@@ -1241,4 +1255,5 @@ const ExcalidrawApp = () => {
 };
 
 export default ExcalidrawApp;
+
 
