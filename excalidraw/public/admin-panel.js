@@ -1,71 +1,142 @@
-﻿(function(){
-  // Ustal backend (WebSocket+REST) – domena serwera API
-  var BACKEND = 'https://websocket-production-e339.up.railway.app';
+﻿const BACKEND_BASE = "https://websocket-production-e339.up.railway.app";
 
-  var qs = function(s){ return document.querySelector(s); };
-  var statusEl = qs('#status');
-  var tableBody = qs('#teachersTable');
-  var tokenInput = qs('#adminToken');
+const qs = (s) => document.querySelector(s);
+const statusEl = qs('#status');
+const tableBody = qs('#teachersTable');
+const tokenInput = qs('#adminToken');
+const teacherCount = qs('#teacherCount');
 
-  function setStatus(msg, type){
-    statusEl.className = type === 'error' ? 'error' : 'success';
-    statusEl.textContent = msg;
+const setStatus = (msg, type = 'info') => {
+  statusEl.className = `status ${type}`;
+  statusEl.textContent = msg || '';
+};
+
+const requireToken = () => {
+  const token = (tokenInput.value || '').trim();
+  if (!token) {
+    throw new Error('Podaj token administratora');
   }
+  return token;
+};
 
-  function teacherLink(teacher_id, token){
-    var appOrigin = window.location.origin;
-    return appOrigin + '/?teacher=' + encodeURIComponent(teacher_id) + '&t=' + encodeURIComponent(token);
+const teacherLink = (teacherId, token) => {
+  const origin = window.location.origin;
+  return `${origin}/?teacher=${encodeURIComponent(teacherId)}&t=${encodeURIComponent(token)}`;
+};
+
+const renderTeachers = (items) => {
+  tableBody.innerHTML = '';
+  const list = Array.isArray(items) ? items : [];
+  teacherCount.textContent = `${list.length} nauczycieli`;
+
+  list.forEach((t) => {
+    const tr = document.createElement('tr');
+    const link = teacherLink(t.teacher_id, t.token);
+    tr.innerHTML = `
+      <td>${t.name || ''}</td>
+      <td>${t.email || ''}</td>
+      <td class="token">${t.teacher_id}</td>
+      <td class="token">${t.token}</td>
+      <td><a target="_blank" href="${link}">Otwórz panel</a></td>
+      <td>
+        <div class="table-actions">
+          <button class="btn-outline" data-copy="${link}">Kopiuj link</button>
+        </div>
+      </td>
+    `;
+    tableBody.appendChild(tr);
+  });
+};
+
+const adminFetch = async (path, opts = {}) => {
+  const token = requireToken();
+  const headers = Object.assign(
+    { 'Content-Type': 'application/json', 'x-admin-token': token },
+    opts.headers || {}
+  );
+  const response = await fetch(`${BACKEND_BASE}${path}`, {
+    method: opts.method || 'GET',
+    headers,
+    body: opts.body,
+  });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(text || `HTTP ${response.status}`);
   }
+  return response.json();
+};
 
-  function renderTeachers(items){
-    tableBody.innerHTML = '';
-    (items||[]).forEach(function(t){
-      var tr = document.createElement('tr');
-      tr.innerHTML = '<td>'+(t.name||'')+'</td>'+
-                     '<td>'+(t.email||'')+'</td>'+
-                     '<td class="token">'+t.teacher_id+'</td>'+
-                     '<td class="token">'+t.token+'</td>'+
-                     '<td><a target="_blank" href="'+teacherLink(t.teacher_id, t.token)+'">Otwórz panel nauczyciela</a></td>';
-      tableBody.appendChild(tr);
+const refreshTeachers = async () => {
+  const json = await adminFetch('/api/admin/teachers');
+  renderTeachers(json.items || []);
+};
+
+qs('#loadTeachers')?.addEventListener('click', async () => {
+  try {
+    setStatus('Ładuję listę nauczycieli...', 'info');
+    await refreshTeachers();
+    setStatus('Załadowano listę nauczycieli', 'success');
+  } catch (error) {
+    setStatus(error.message, 'error');
+  }
+});
+
+qs('#addTeacher')?.addEventListener('click', async () => {
+  const name = (qs('#teacherName')?.value || '').trim();
+  const email = (qs('#teacherEmail')?.value || '').trim();
+  if (!name) {
+    setStatus('Podaj imię i nazwisko nauczyciela', 'error');
+    return;
+  }
+  try {
+    setStatus('Dodaję nauczyciela...', 'info');
+    await adminFetch('/api/admin/teachers', {
+      method: 'POST',
+      body: JSON.stringify({ name, email: email || null }),
     });
+    qs('#teacherName').value = '';
+    qs('#teacherEmail').value = '';
+    await refreshTeachers();
+    setStatus('Nauczyciel dodany pomyślnie', 'success');
+  } catch (error) {
+    setStatus(error.message, 'error');
   }
+});
 
-  async function adminFetch(path, opts){
-    var headers = Object.assign({'Content-Type':'application/json'}, (opts && opts.headers)||{});
-    var token = (tokenInput.value||'').trim();
-    if(!token){ throw new Error('Wprowadź token administratora'); }
-    headers['x-admin-token'] = token;
-    var resp = await fetch(BACKEND + path, Object.assign({}, opts||{}, { headers: headers }));
-    if(!resp.ok){ throw new Error('HTTP '+resp.status+': '+ (await resp.text())); }
-    return resp.json();
-  }
-
-  var loadBtn = qs('#loadTeachers');
-  if(loadBtn){
-    loadBtn.addEventListener('click', async function(){
-      try{
-        var json = await adminFetch('/api/admin/teachers');
-        renderTeachers(json.items||[]);
-        setStatus('Załadowano listę nauczycieli','ok');
-      }catch(e){ setStatus(e.message,'error'); }
+qs('#uploadCsv')?.addEventListener('click', async () => {
+  try {
+    let csv = (qs('#csvText')?.value || '').trim();
+    if (!csv) {
+      const file = qs('#csvFile')?.files?.[0];
+      if (!file) {
+        setStatus('Wybierz plik CSV lub wklej dane', 'error');
+        return;
+      }
+      csv = await file.text();
+    }
+    setStatus('Przetwarzam CSV...', 'info');
+    await adminFetch('/api/admin/teachers/upload', {
+      method: 'POST',
+      body: JSON.stringify({ csv }),
     });
+    qs('#csvText').value = '';
+    qs('#csvFile').value = '';
+    await refreshTeachers();
+    setStatus('Wgrano nauczycieli z CSV', 'success');
+  } catch (error) {
+    setStatus(error.message, 'error');
   }
+});
 
-  var uploadBtn = qs('#uploadCsv');
-  if(uploadBtn){
-    uploadBtn.addEventListener('click', async function(){
-      try{
-        var csv = (qs('#csvText').value||'').trim();
-        if(!csv){
-          var file = (qs('#csvFile').files||[])[0];
-          if(!file){ throw new Error('Wybierz plik CSV lub wklej dane'); }
-          csv = await file.text();
-        }
-        var json = await adminFetch('/api/admin/teachers/upload', { method:'POST', body: JSON.stringify({csv: csv}) });
-        var list = await adminFetch('/api/admin/teachers');
-        renderTeachers(list.items||[]);
-        setStatus('Wgrano '+(json.items?json.items.length:0)+' nauczycieli','ok');
-      }catch(e){ setStatus(e.message,'error'); }
-    });
+// Delegacja kopiowania linków
+qs('#teachersTable')?.addEventListener('click', async (event) => {
+  const target = event.target;
+  if (target instanceof HTMLElement && target.dataset.copy) {
+    try {
+      await navigator.clipboard.writeText(target.dataset.copy);
+      setStatus('Skopiowano link nauczyciela', 'success');
+    } catch (error) {
+      setStatus('Nie udało się skopiować linku', 'error');
+    }
   }
-})();
+});

@@ -2,54 +2,226 @@
 <html lang="pl">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Panel Administratora — Nauczyciele</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Panel Administratora – Nauczyciele</title>
     <style>
-      body { font-family: system-ui, Arial, sans-serif; margin: 24px; }
-      .row { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
-      textarea { width: 100%; height: 160px; }
-      table { border-collapse: collapse; width: 100%; margin-top: 16px; }
-      th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-      th { background: #f7f7f7; }
-      .token { font-family: monospace; }
-      .muted { color: #666; font-size: 12px; }
-      .error { color: #b00020; }
-      .success { color: #0a7a3f; }
+      :root {
+        color-scheme: light dark;
+        --bg: #f5f6fb;
+        --card: #ffffff;
+        --accent: #4f46e5;
+        --accent-dark: #4338ca;
+        --text: #111827;
+        --text-muted: #6b7280;
+        --border: #e5e7eb;
+        --error: #dc2626;
+        --success: #047857;
+      }
+      * { box-sizing: border-box; }
+      body {
+        font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+      }
+      header {
+        padding: 32px 24px 16px;
+        text-align: center;
+      }
+      header h1 {
+        margin: 0 0 8px;
+        font-size: 28px;
+        font-weight: 700;
+      }
+      header p {
+        margin: 0;
+        color: var(--text-muted);
+      }
+      main {
+        max-width: 920px;
+        margin: 0 auto 48px;
+        padding: 0 24px 48px;
+        display: grid;
+        gap: 24px;
+      }
+      .card {
+        background: var(--card);
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 20px 35px rgba(15, 23, 42, 0.08);
+        border: 1px solid rgba(15, 23, 42, 0.06);
+      }
+      .card h2 {
+        margin: 0 0 16px;
+        font-size: 20px;
+      }
+      label {
+        font-weight: 600;
+        font-size: 13px;
+        display: block;
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--text-muted);
+      }
+      input[type="text"],
+      input[type="email"],
+      input[type="password"],
+      textarea {
+        width: 100%;
+        padding: 12px 14px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: #fff;
+        font-size: 14px;
+        transition: border 0.2s, box-shadow 0.2s;
+      }
+      textarea { min-height: 140px; resize: vertical; }
+      input:focus,
+      textarea:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.25);
+      }
+      button {
+        border: none;
+        border-radius: 10px;
+        padding: 11px 18px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.1s ease, box-shadow 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .btn-primary {
+        background: var(--accent);
+        color: #fff;
+        box-shadow: 0 12px 20px rgba(79, 70, 229, 0.28);
+      }
+      .btn-primary:hover { background: var(--accent-dark); }
+      .btn-outline {
+        background: #fff;
+        color: var(--accent);
+        border: 1px solid rgba(79, 70, 229, 0.3);
+      }
+      .form-row { display: grid; gap: 16px; margin-bottom: 18px; }
+      .form-row.inline { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); align-items: end; }
+      .status {
+        font-size: 14px;
+        font-weight: 500;
+        margin-top: 10px;
+      }
+      .status.error { color: var(--error); }
+      .status.success { color: var(--success); }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+      }
+      th, td {
+        padding: 14px 12px;
+        border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+        text-align: left;
+      }
+      th { background: rgba(79, 70, 229, 0.06); font-weight: 600; text-transform: uppercase; font-size: 12px; letter-spacing: 0.05em; }
+      tbody tr:hover { background: rgba(79, 70, 229, 0.04); }
+      .token { font-family: "JetBrains Mono", "SFMono-Regular", Menlo, monospace; font-size: 13px; }
+      .table-actions { display: inline-flex; gap: 8px; }
+      .pill {
+        background: rgba(79, 70, 229, 0.08);
+        color: var(--accent-dark);
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-weight: 600;
+        font-size: 12px;
+      }
+      @media (max-width: 640px) {
+        main { padding: 0 16px 32px; }
+        .form-row.inline { grid-template-columns: 1fr; }
+        table { display: block; overflow-x: auto; }
+      }
     </style>
   </head>
   <body>
-    <h1>Panel Administratora</h1>
-    <p class="muted">Wgraj CSV z nauczycielami i wygeneruj linki dostępu.</p>
+    <header>
+      <h1>Panel Administratora</h1>
+      <p>Zarządzaj kontami nauczycieli i linkami dostępowymi.</p>
+    </header>
+    <main>
+      <section class="card" id="tokenCard">
+        <h2>Autoryzacja</h2>
+        <div class="form-row inline">
+          <div>
+            <label for="adminToken">Admin token</label>
+            <input id="adminToken" type="password" placeholder="Wpisz ADMIN_TOKEN" autocomplete="off" />
+          </div>
+          <div>
+            <button id="loadTeachers" class="btn-primary">Pobierz nauczycieli</button>
+          </div>
+        </div>
+        <div id="status" class="status"></div>
+      </section>
 
-    <div class="row">
-      <label for="adminToken">Admin token:</label>
-      <input id="adminToken" type="password" placeholder="Wpisz ADMIN_TOKEN" />
-      <button id="loadTeachers">Pobierz nauczycieli</button>
-    </div>
+      <section class="card">
+        <div class="form-row">
+          <h2>Dodaj nauczyciela</h2>
+          <div class="form-row inline">
+            <div>
+              <label for="teacherName">Imię i nazwisko</label>
+              <input id="teacherName" type="text" placeholder="np. Jan Kowalski" />
+            </div>
+            <div>
+              <label for="teacherEmail">Email (opcjonalnie)</label>
+              <input id="teacherEmail" type="email" placeholder="np. jan@example.com" />
+            </div>
+            <div>
+              <button id="addTeacher" class="btn-primary">Dodaj nauczyciela</button>
+            </div>
+          </div>
+        </div>
+      </section>
 
-    <div class="row">
-      <input id="csvFile" type="file" accept=".csv" />
-      <button id="uploadCsv">Wgraj CSV</button>
-    </div>
-    <div class="row">
-      <textarea id="csvText" placeholder="Lub wklej CSV tutaj (kolumny: name,email)&#10;Jan Kowalski,jan@example.com&#10;..."></textarea>
-    </div>
-    <div id="status"></div>
+      <section class="card">
+        <h2>Import z CSV</h2>
+        <div class="form-row inline">
+          <div>
+            <label for="csvFile">Plik CSV</label>
+            <input id="csvFile" type="file" accept=".csv" />
+          </div>
+          <div>
+            <button id="uploadCsv" class="btn-outline">Wgraj CSV</button>
+          </div>
+        </div>
+        <div class="form-row">
+          <label for="csvText">Lub wklej dane (kolumny: name,email)</label>
+          <textarea id="csvText" placeholder="Jan Kowalski,jan@example.com&#10;Anna Nowak,anna@example.com"></textarea>
+        </div>
+      </section>
 
-    <h2>Lista nauczycieli</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Imię i nazwisko</th>
-          <th>Email</th>
-          <th>teacher_id</th>
-          <th>Token</th>
-          <th>Link nauczyciela</th>
-        </tr>
-      </thead>
-      <tbody id="teachersTable"></tbody>
-    </table>
-
-    <script src="/admin-panel.js"></script>
+      <section class="card">
+        <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom:12px;">
+          <h2>Lista nauczycieli</h2>
+          <span id="teacherCount" class="pill">0 nauczycieli</span>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Imię i nazwisko</th>
+                <th>Email</th>
+                <th>teacher_id</th>
+                <th>Token</th>
+                <th>Link nauczyciela</th>
+                <th>Akcje</th>
+              </tr>
+            </thead>
+            <tbody id="teachersTable"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+    <script type="module" src="/admin-panel.js"></script>
   </body>
 </html>
