@@ -1,10 +1,311 @@
+import {
+  CaptureUpdateAction,
+  getSceneVersion,
+  restoreElements,
+  zoomToFitBounds,
+  reconcileElements,
+} from "@excalidraw/excalidraw";
+import { ErrorDialog } from "@excalidraw/excalidraw/components/ErrorDialog";
+import { APP_NAME, EVENT } from "@excalidraw/common";
+import {
+  IDLE_THRESHOLD,
+  ACTIVE_THRESHOLD,
+  UserIdleState,
+  assertNever,
+  isDevEnv,
+  isTestEnv,
+  preventUnload,
+  resolvablePromise,
+  throttleRAF,
+} from "@excalidraw/common";
+import { decryptData } from "@excalidraw/excalidraw/data/encryption";
+import { getVisibleSceneBounds } from "@excalidraw/element";
+import { newElementWith } from "@excalidraw/element";
+import { isImageElement, isInitializedImageElement } from "@excalidraw/element";
+import { AbortError } from "@excalidraw/excalidraw/errors";
+import { t } from "@excalidraw/excalidraw/i18n";
+import { withBatchedUpdates } from "@excalidraw/excalidraw/reactUtils";
+
+import throttle from "lodash.throttle";
+import { PureComponent } from "react";
+
+import type {
+  ReconciledExcalidrawElement,
+  RemoteExcalidrawElement,
+} from "@excalidraw/excalidraw/data/reconcile";
+import type { ImportedDataState } from "@excalidraw/excalidraw/data/types";
+import type {
+  ExcalidrawElement,
+  FileId,
+  InitializedExcalidrawImageElement,
+  OrderedExcalidrawElement,
+} from "@excalidraw/element/types";
+import type {
+  BinaryFileData,
+  ExcalidrawImperativeAPI,
+  SocketId,
+  Collaborator,
+  Gesture,
+} from "@excalidraw/excalidraw/types";
+import type { Mutable, ValueOf } from "@excalidraw/common/utility-types";
+
+import { appJotaiStore, atom } from "../app-jotai";
+import {
+  CURSOR_SYNC_TIMEOUT,
+  FILE_UPLOAD_MAX_BYTES,
+  FIREBASE_STORAGE_PREFIXES,
+  INITIAL_SCENE_UPDATE_TIMEOUT,
+  LOAD_IMAGES_TIMEOUT,
+  WS_SUBTYPES,
+  SYNC_FULL_SCENE_INTERVAL_MS,
+  WS_EVENTS,
+} from "../app_constants";
+import {
+  generateCollaborationLinkData,
+  getCollaborationLink,
+  getSyncableElements,
+} from "../data";
+import {
+  encodeFilesForUpload,
+  FileManager,
+  updateStaleImageStatuses,
+} from "../data/FileManager";
+import { LocalData } from "../data/LocalData";
+import {
+  isSavedToFirebase,
+  loadFilesFromFirebase,
+  loadFromFirebase,
+  saveFilesToFirebase,
+  saveToFirebase,
+} from "../data/firebase";
+import {
+  isSavedToServer,
+  loadFromServer,
+  saveToServer,
+} from "../data/restPersistence";
+import {
+  importUsernameFromLocalStorage,
+  saveUsernameToLocalStorage,
+} from "../data/localStorage";
+import { resetBrowserStateVersions } from "../data/tabSync";
+import { apiClient, getServerUrl } from "../data/api-client";
+
+import { collabErrorIndicatorAtom } from "./CollabError";
+import Portal from "./Portal";
+
+import type {
+  SocketUpdateDataSource,
+  SyncableExcalidrawElement,
+} from "../data";
+
+export const collabAPIAtom = atom<CollabAPI | null>(null);
+export const isCollaboratingAtom = atom(false);
+export const isOfflineAtom = atom(false);
+
+interface CollabState {
+  errorMessage: string | null;
+  /** errors related to saving */
+  dialogNotifiedErrors: Record<string, boolean>;
+  username: string;
+  activeRoomLink: string | null;
+}
+
+export const activeRoomLinkAtom = atom<string | null>(null);
+
+type CollabInstance = InstanceType<typeof Collab>;
+
+export interface CollabAPI {
+  /** function so that we can access the latest value from stale callbacks */
+  isCollaborating: () => boolean;
+  onPointerUpdate: CollabInstance["onPointerUpdate"];
+  startCollaboration: CollabInstance["startCollaboration"];
+  stopCollaboration: CollabInstance["stopCollaboration"];
+  syncElements: CollabInstance["syncElements"];
+  fetchImageFilesFromFirebase: CollabInstance["fetchImageFilesFromFirebase"];
+  setUsername: CollabInstance["setUsername"];
+  getUsername: CollabInstance["getUsername"];
+  getActiveRoomLink: CollabInstance["getActiveRoomLink"];
+  setCollabError: CollabInstance["setErrorDialog"];
+  resolvePermalink: CollabInstance["resolvePermalink"];
+}
+
+interface CollabProps {
+  excalidrawAPI: ExcalidrawImperativeAPI;
+}
+
+class Collab extends PureComponent<CollabProps, CollabState> {
+  portal: Portal;
+  fileManager: FileManager;
+  excalidrawAPI: CollabProps["excalidrawAPI"];
+  activeIntervalId: number | null;
+  idleTimeoutId: number | null;
+
+  private socketInitializationTimer?: number;
+  private lastBroadcastedOrReceivedSceneVersion: number = -1;
+  private collaborators = new Map<SocketId, Collaborator>();
+
+  constructor(props: CollabProps) {
+    super(props);
+    this.state = {
+      errorMessage: null,
+      dialogNotifiedErrors: {},
+      username: importUsernameFromLocalStorage() || "",
+      activeRoomLink: null,
+    };
+    this.portal = new Portal(this);
+    this.fileManager = new FileManager({
+      getFiles: async (fileIds) => {
+        const { roomId, roomKey } = this.portal;
+        if (!roomId || !roomKey) {
+          throw new AbortError();
+        }
+
+        return loadFilesFromFirebase(`files/rooms/${roomId}`, roomKey, fileIds);
+      },
+      saveFiles: async ({ addedFiles }) => {
+        const { roomId, roomKey } = this.portal;
+        if (!roomId || !roomKey) {
+          throw new AbortError();
+        }
+
+        const { savedFiles, erroredFiles } = await saveFilesToFirebase({
+          prefix: `${FIREBASE_STORAGE_PREFIXES.collabFiles}/${roomId}`,
+          files: await encodeFilesForUpload({
+            files: addedFiles,
+            encryptionKey: roomKey,
+            maxBytes: FILE_UPLOAD_MAX_BYTES,
+          }),
+        });
+
+        return {
+          savedFiles: savedFiles.reduce(
+            (acc: Map<FileId, BinaryFileData>, id) => {
+              const typedId = id as FileId;
+              const fileData = addedFiles.get(typedId);
+              if (fileData) {
+                acc.set(typedId, fileData);
+              }
+              return acc;
+            },
+            new Map(),
+          ),
+          erroredFiles: erroredFiles.reduce(
+            (acc: Map<FileId, BinaryFileData>, id) => {
+              const typedId = id as FileId;
+              const fileData = addedFiles.get(typedId);
+              if (fileData) {
+                acc.set(typedId, fileData);
+              }
+              return acc;
+            },
+            new Map(),
+          ),
+        };
+      },
+    });
+    this.excalidrawAPI = props.excalidrawAPI;
+    this.activeIntervalId = null;
+    this.idleTimeoutId = null;
+  }
+
+  private onUmmount: (() => void) | null = null;
+
+  componentDidMount() {
+    window.addEventListener(EVENT.BEFORE_UNLOAD, this.beforeUnload);
+    window.addEventListener("online", this.onOfflineStatusToggle);
+    window.addEventListener("offline", this.onOfflineStatusToggle);
+    window.addEventListener(EVENT.UNLOAD, this.onUnload);
+
+    const unsubOnUserFollow = this.excalidrawAPI.onUserFollow((payload) => {
+      this.portal.socket && this.portal.broadcastUserFollowed(payload);
+    });
+    const throttledRelayUserViewportBounds = throttleRAF(
+      this.relayVisibleSceneBounds,
+    );
+    const unsubOnScrollChange = this.excalidrawAPI.onScrollChange(() =>
+      throttledRelayUserViewportBounds(),
+    );
+    this.onUmmount = () => {
+      unsubOnUserFollow();
+      unsubOnScrollChange();
+    };
+
+    this.onOfflineStatusToggle();
+
+    const collabAPI: CollabAPI = {
+      isCollaborating: this.isCollaborating,
+      onPointerUpdate: this.onPointerUpdate,
+      startCollaboration: this.startCollaboration,
+      syncElements: this.syncElements,
+      fetchImageFilesFromFirebase: this.fetchImageFilesFromFirebase,
+      stopCollaboration: this.stopCollaboration,
+      setUsername: this.setUsername,
+      getUsername: this.getUsername,
+      getActiveRoomLink: this.getActiveRoomLink,
+      setCollabError: this.setErrorDialog,
+      resolvePermalink: this.resolvePermalink,
+    };
+
+    appJotaiStore.set(collabAPIAtom, collabAPI);
+
+    if (isTestEnv() || isDevEnv()) {
+      window.collab = window.collab || ({} as Window["collab"]);
+      Object.defineProperties(window, {
+        collab: {
+          configurable: true,
+          value: this,
+        },
+      });
+    }
+  }
+
+  onOfflineStatusToggle = () => {
+    appJotaiStore.set(isOfflineAtom, !window.navigator.onLine);
+  };
+
+  componentWillUnmount() {
+    window.removeEventListener("online", this.onOfflineStatusToggle);
+    window.removeEventListener("offline", this.onOfflineStatusToggle);
+    window.removeEventListener(EVENT.BEFORE_UNLOAD, this.beforeUnload);
+    window.removeEventListener(EVENT.UNLOAD, this.onUnload);
+    window.removeEventListener(EVENT.POINTER_MOVE, this.onPointerMove);
+    window.removeEventListener(
+      EVENT.VISIBILITY_CHANGE,
+      this.onVisibilityChange,
+    );
+    if (this.activeIntervalId) {
+      window.clearInterval(this.activeIntervalId);
+      this.activeIntervalId = null;
+    }
+    if (this.idleTimeoutId) {
+      window.clearTimeout(this.idleTimeoutId);
+      this.idleTimeoutId = null;
+    }
+    this.onUmmount?.();
+  }
+
+  isCollaborating = () => appJotaiStore.get(isCollaboratingAtom)!;
+
+  private setIsCollaborating = (isCollaborating: boolean) => {
+    appJotaiStore.set(isCollaboratingAtom, isCollaborating);
+  };
+
+  private onUnload = () => {
+    this.destroySocketClient({ isUnload: true });
+  };
+
+  private beforeUnload = withBatchedUpdates((event: BeforeUnloadEvent) => {
+    const syncableElements = getSyncableElements(
+      this.getSceneElementsIncludingDeleted(),
+    );
 
     if (
       this.isCollaborating() &&
-      const unsavedOnServer = !isSavedToServer(this.portal, syncableElements);
-      const unsavedOnFiles = this.fileManager.shouldPreventUnload(syncableElements);
-      const unsavedOnFirebase = !isSavedToFirebase(this.portal, syncableElements);
-      if (unsavedOnServer || unsavedOnFiles || unsavedOnFirebase) {
+      (
+        this.fileManager.shouldPreventUnload(syncableElements) ||
+        !isSavedToFirebase(this.portal, syncableElements) ||
+        !isSavedToServer(this.portal, syncableElements)
+      )
     ) {
       // this won't run in time if user decides to leave the site, but
       //  the purpose is to run in immediately after user decides to stay
@@ -788,5 +1089,7 @@ if (isTestEnv() || isDevEnv()) {
 export default Collab;
 
 export type TCollabClass = Collab;
+
+
 
 
