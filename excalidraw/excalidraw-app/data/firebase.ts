@@ -175,7 +175,11 @@ export const saveFilesToFirebase = async ({
     if (!roomId) {
       return { savedFiles: [], erroredFiles: files.map((f) => f.id) };
     }
-    return apiClient.uploadFiles(roomId, files);
+    const result = await apiClient.uploadFiles(roomId, files);
+    return {
+      savedFiles: result.savedFiles.map((id) => id as FileId),
+      erroredFiles: result.erroredFiles.map((id) => id as FileId),
+    };
   }
   const storage = await loadFirebaseStorage();
 
@@ -330,7 +334,7 @@ export const loadFilesFromFirebase = async (
       const erroredFiles = new Map<FileId, true>();
 
       for (const id of missing) {
-        erroredFiles.set(id, true);
+        erroredFiles.set(id as FileId, true);
       }
 
       for (const file of files) {

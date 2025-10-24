@@ -354,7 +354,7 @@ app.post("/api/rooms/:roomId/files/batch", async (req, res) => {
     }));
 
     const found = new Set(files.map((file) => file.id));
-    const missing = ids.filter((id) => !found.has(id));
+    const missing = ids.filter((id: string) => !found.has(id));
 
     return res.json({ files, missing });
   } catch (error) {

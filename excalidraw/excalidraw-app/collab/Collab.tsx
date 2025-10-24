@@ -180,9 +180,10 @@ class Collab extends PureComponent<CollabProps, CollabState> {
         return {
           savedFiles: savedFiles.reduce(
             (acc: Map<FileId, BinaryFileData>, id) => {
-              const fileData = addedFiles.get(id);
+              const typedId = id as FileId;
+              const fileData = addedFiles.get(typedId);
               if (fileData) {
-                acc.set(id, fileData);
+                acc.set(typedId, fileData);
               }
               return acc;
             },
@@ -190,9 +191,10 @@ class Collab extends PureComponent<CollabProps, CollabState> {
           ),
           erroredFiles: erroredFiles.reduce(
             (acc: Map<FileId, BinaryFileData>, id) => {
-              const fileData = addedFiles.get(id);
+              const typedId = id as FileId;
+              const fileData = addedFiles.get(typedId);
               if (fileData) {
-                acc.set(id, fileData);
+                acc.set(typedId, fileData);
               }
               return acc;
             },

@@ -210,7 +210,7 @@ class ApiClient {
         method: "POST",
         body: JSON.stringify({
           files: files.map((file) => ({
-            id: file.id,
+            id: file.id as string,
             data: uint8ToBase64(file.buffer),
           })),
         }),
