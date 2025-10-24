@@ -12,7 +12,8 @@ if (backendParam) {
   }
 }
 
-let backendBase = storedBackend || window.location.origin;
+const DEFAULT_BACKEND = 'https://websocket-production-e339.up.railway.app';
+let backendBase = storedBackend || DEFAULT_BACKEND;
 backendBase = backendBase.replace(/\/$/, "");
 
 const BACKEND_BASE = backendBase;
@@ -157,4 +158,5 @@ qs('#teachersTable')?.addEventListener('click', async (event) => {
     }
   }
 });
+
 
