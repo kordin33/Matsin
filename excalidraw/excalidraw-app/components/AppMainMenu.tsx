@@ -30,17 +30,17 @@ export const AppMainMenu: React.FC<{
   return (
     <MainMenu>
       <MainMenu.DefaultItems.SaveAsImage />
-      {/* Tymczasowa wsp\u00f3\u0142praca na \u017cywo (bez permalinka) */}
+      {/* Tymczasowa współpraca na żywo (bez permalinka) */}
       <MainMenu.Item icon={usersIcon} onClick={props.onCollabDialogOpen}>
-        Wsp\u00f3\u0142praca (tymczasowa)
+        Współpraca (tymczasowa)
       </MainMenu.Item>
 
-      {/* Sta\u0142e linki dla uczni\u00f3w */}
+      {/* Stałe linki dla uczniów */}
       <MainMenu.Item
         icon={usersIcon}
         onClick={() => setStudentDialog({ isOpen: true })}
       >
-        Uczniowie (sta\u0142e linki)
+        Uczniowie (stałe linki)
       </MainMenu.Item>
 
       <MainMenu.DefaultItems.ClearCanvas />

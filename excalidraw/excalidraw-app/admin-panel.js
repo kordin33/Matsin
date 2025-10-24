@@ -36,7 +36,7 @@ const renderTeachers = (items) => {
       <td class="token">${teacher.teacher_id}</td>
       <td class="token">${teacher.token}</td>
       <td>
-        <a target="_blank" href="${teacherLink(teacher.teacher_id, teacher.token)}">Otw\u00f3rz panel nauczyciela</a>
+        <a target="_blank" href="${teacherLink(teacher.teacher_id, teacher.token)}">Otwórz panel nauczyciela</a>
         <button type="button" class="copy-link" data-link="${teacherLink(teacher.teacher_id, teacher.token)}">Kopiuj link</button>
       </td>
     `;
@@ -47,7 +47,7 @@ const renderTeachers = (items) => {
 const requireAdminToken = () => {
   const token = tokenInput?.value.trim();
   if (!token) {
-    throw new Error("Wprowad\u017a token administratora");
+    throw new Error("Wprowadź token administratora");
   }
   return token;
 };
@@ -68,7 +68,7 @@ qs("#loadTeachers")?.addEventListener("click", async () => {
   try {
     const json = await adminFetch("/api/admin/teachers");
     renderTeachers(json.items || []);
-    setStatus("Za\u0142adowano list\u0119 nauczycieli", "success");
+    setStatus("Załadowano listę nauczycieli", "success");
   } catch (error) {
     setStatus(error.message, "error");
   }
@@ -118,6 +118,6 @@ tableBody?.addEventListener("click", async (event) => {
     }, 2000);
   } catch (error) {
     console.error("Clipboard error", error);
-    setStatus("Nie uda\u0142o si\u0119 skopiowa\u0107 linku", "error");
+    setStatus("Nie udało się skopiować linku", "error");
   }
 });
