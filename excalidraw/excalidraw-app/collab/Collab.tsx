@@ -323,7 +323,7 @@ class Collab extends PureComponent<CollabProps, CollabState> {
   ) => {
     try {
       const preferServer =
-        import.meta.env.VITE_APP_DISABLE_DATABASE_PERSISTENCE !== "true";
+        import.meta.env.VITE_APP_PERSISTENT_ROOMS !== "false";
 
       let storedElements: readonly SyncableExcalidrawElement[] | null = null;
 
@@ -744,7 +744,7 @@ class Collab extends PureComponent<CollabProps, CollabState> {
 
       try {
         const preferServer =
-          import.meta.env.VITE_APP_DISABLE_DATABASE_PERSISTENCE !== "true";
+          import.meta.env.VITE_APP_PERSISTENT_ROOMS !== "false";
 
         let elements: readonly SyncableExcalidrawElement[] | null = null;
 

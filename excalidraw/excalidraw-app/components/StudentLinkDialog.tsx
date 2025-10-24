@@ -286,6 +286,9 @@ export const StudentLinkDialog = ({
     }
 
     try {
+      const currentUrl = new URL(window.location.href);
+      currentUrl.hash = `#room=${roomId},${roomKey}`;
+      window.history.pushState({}, document.title, currentUrl.toString());
       setErrorMessage(null);
       await collabAPI.startCollaboration({ roomId, roomKey });
       handleClose();
@@ -435,11 +438,11 @@ export const StudentLinkDialog = ({
         </section>
 
         <footer className="StudentLinkDialog__footer">
-          <h4>Jak to dzia\u0142a</h4>
+          <h4>Jak to działa</h4>
           <ol>
-            <li>Tw\u00f3rz sta\u0142y link dla ka\u017cdego ucznia.</li>
-            <li>Przeka\u017c link uczniowi, aby zawsze wraca\u0142 do swojej tablicy.</li>
-            <li>Do\u0142\u0105czaj do pokoju ucznia zawsze, gdy chcesz \u015bledzi\u0107 jego prac\u0119.</li>
+            <li>Twórz stały link dla każdego ucznia.</li>
+            <li>Przekaż link uczniowi, aby zawsze wracał do swojej tablicy.</li>
+            <li>Dołączaj do pokoju ucznia zawsze, gdy chcesz śledzić jego pracę.</li>
           </ol>
         </footer>
       </div>
