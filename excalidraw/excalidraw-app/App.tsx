@@ -1,4 +1,4 @@
-﻿import {
+import {
   Excalidraw,
   TTDDialogTrigger,
   CaptureUpdateAction,
@@ -120,6 +120,7 @@ import {
   LibraryLocalStorageMigrationAdapter,
   LocalData,
 } from "./data/LocalData";
+import { apiClient } from "./data/api-client";
 import { isBrowserStorageStateNewer } from "./data/tabSync";
 import { ShareDialog, shareDialogStateAtom } from "./share/ShareDialog";
 import { StudentLinkDialog, studentLinkDialogStateAtom } from "./components/StudentLinkDialog";
@@ -158,6 +159,16 @@ declare global {
 
   interface WindowEventMap {
     beforeinstallprompt: BeforeInstallPromptEvent;
+  }
+
+  interface Window {
+    __pendingRoomLinkData?:
+      | {
+          roomId: string;
+          roomKey: string;
+          studentName?: string | null;
+        }
+      | null;
   }
 }
 
@@ -230,45 +241,70 @@ const initializeScene = async (opts: {
 
   let roomLinkData = getCollaborationLinkData(window.location.href);
   const studentParam = new URL(window.location.href).searchParams.get("student");
-  
-  // Handle permalink resolution
-  if (permalink && !roomLinkData && opts.collabAPI) {
+  const pendingRoomLinkData = window.__pendingRoomLinkData ?? null;
+
+  const resolvePermalink = async (slug: string) => {
+    if (opts.collabAPI?.resolvePermalink) {
+      return opts.collabAPI.resolvePermalink(slug);
+    }
+    return apiClient.resolvePermalink(slug);
+  };
+
+  if (permalink && !roomLinkData) {
     try {
-      const permalinkData = await opts.collabAPI.resolvePermalink(permalink);
+      const permalinkData = await resolvePermalink(permalink);
       if (permalinkData) {
         roomLinkData = {
           roomId: permalinkData.roomId,
           roomKey: permalinkData.roomKey,
         };
-        // Set student name if provided
-        if (permalinkData.studentName) {
-          opts.collabAPI.setUsername(permalinkData.studentName);
+
+        const resolvedStudentName =
+          permalinkData.studentName ?? studentParam ?? pendingRoomLinkData?.studentName ?? null;
+
+        if (opts.collabAPI) {
+          if (resolvedStudentName) {
+            opts.collabAPI.setUsername(resolvedStudentName);
+          }
+          window.__pendingRoomLinkData = null;
+        } else {
+          window.__pendingRoomLinkData = {
+            roomId: permalinkData.roomId,
+            roomKey: permalinkData.roomKey,
+            studentName: resolvedStudentName,
+          };
         }
-        // Update URL to remove permalink parameter and add collaboration hash
+
         const newUrl = new URL(window.location.href);
-        newUrl.searchParams.delete('permalink');
+        newUrl.searchParams.delete("permalink");
         newUrl.hash = `#room=${permalinkData.roomId},${permalinkData.roomKey}`;
         window.history.replaceState({}, APP_NAME, newUrl.toString());
       }
     } catch (error) {
-      console.error('Failed to resolve permalink:', error);
+      console.error("Failed to resolve permalink:", error);
       return {
         scene: {
           appState: {
-            // Use existing i18n key to satisfy types
-            errorMessage: t('alerts.invalidSceneUrl'),
+            errorMessage: t("alerts.invalidSceneUrl"),
           },
         },
         isExternalScene: false,
       };
     }
   }
-  // If joining via direct #room=... link and student name provided in query, set it
-  if (roomLinkData && studentParam && opts.collabAPI) {
-    opts.collabAPI.setUsername(studentParam);
-    const newUrl = new URL(window.location.href);
-    newUrl.searchParams.delete('student');
-    window.history.replaceState({}, APP_NAME, newUrl.toString());
+
+  if (!roomLinkData && window.__pendingRoomLinkData) {
+    const pending = window.__pendingRoomLinkData;
+    roomLinkData = {
+      roomId: pending.roomId,
+      roomKey: pending.roomKey,
+    };
+    if (opts.collabAPI && pending.studentName) {
+      opts.collabAPI.setUsername(pending.studentName);
+    }
+    if (opts.collabAPI) {
+      window.__pendingRoomLinkData = null;
+    }
   }
   const isExternalScene = !!(id || jsonBackendMatch || roomLinkData);
   if (isExternalScene) {
@@ -1033,7 +1069,7 @@ useEffect(() => {
                 "numbers",
                 "scientific",
               ],
-              icon: <span style={{ fontSize: "14px" }}>đź§®</span>,
+              icon: <span style={{ fontSize: "14px" }}>🧮</span>,
               perform: () => {
                 setIsCalculatorOpen(true);
               },
@@ -1260,5 +1296,7 @@ const ExcalidrawApp = () => {
 };
 
 export default ExcalidrawApp;
+
+
 
 
