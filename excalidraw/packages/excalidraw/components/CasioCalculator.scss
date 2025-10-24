@@ -1,8 +1,6 @@
 .calculator-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(17, 20, 35, 0.55);
-  backdrop-filter: blur(12px);
   z-index: 5000;
   pointer-events: none;
 }
