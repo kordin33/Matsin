@@ -1,726 +1,221 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { evaluate, format } from "mathjs";
-
-type IconProps = { size?: number; className?: string };
-const createIcon = (glyph: string): React.FC<IconProps> => ({ className }) => (
-  <span className={className} aria-hidden="true">
-    {glyph}
-  </span>
-);
-const CalculatorIcon = createIcon("??");
-const Binary = createIcon("??");
-const FileSpreadsheet = createIcon("??");
-const Grid3x3 = createIcon("#");
-const Sigma = createIcon("?");
-const Table2 = createIcon("??");
-const TrendingUp = createIcon("??");
 
 import "./CasioCalculator.scss";
 
-type AngleMode = "DEG" | "RAD" | "GRAD";
-type DisplayFormat = "NORM" | "SCI" | "FIX" | "ENG";
-type ModeId =
-  | "CALC"
-  | "CMPLX"
-  | "BASE-N"
-  | "STAT"
-  | "EQN"
-  | "MATRIX"
-  | "TABLE"
-  | "SHEET";
+type CalculatorButton =
+  | { label: string; value: string; variant?: "operator" | "action"; span?: number }
+  | { label: string; action: "clear" | "backspace" | "equals"; span?: number };
 
-type VariableKey = "A" | "B" | "C" | "D" | "E" | "F" | "X" | "Y" | "Z" | "M" | "Ans";
+const BUTTONS: CalculatorButton[] = [
+  { label: "(", value: "(", variant: "operator" },
+  { label: ")", value: ")", variant: "operator" },
+  { label: "π", value: "pi", variant: "operator" },
+  { label: "√", value: "sqrt(", variant: "operator" },
+  { label: "7", value: "7" },
+  { label: "8", value: "8" },
+  { label: "9", value: "9" },
+  { label: "÷", value: "÷", variant: "operator" },
+  { label: "4", value: "4" },
+  { label: "5", value: "5" },
+  { label: "6", value: "6" },
+  { label: "×", value: "×", variant: "operator" },
+  { label: "1", value: "1" },
+  { label: "2", value: "2" },
+  { label: "3", value: "3" },
+  { label: "−", value: "-", variant: "operator" },
+  { label: "0", value: "0", span: 2 },
+  { label: ",", value: ".", variant: "operator" },
+  { label: "+", value: "+", variant: "operator" },
+  { label: "=", action: "equals", span: 2 },
+  { label: "AC", action: "clear", span: 2 },
+  { label: "⌫", action: "backspace", span: 2 },
+];
 
-interface HistoryEntry {
-  expr: string;
-  result: string;
-  mode: ModeId;
-  timestamp: string;
-}
-
-type Variables = Record<VariableKey, number>;
-
-type LucideIcon = React.ComponentType<{ size?: number; className?: string }>;
-
-interface Mode {
-  id: ModeId;
-  name: string;
-  description: string;
-  Icon?: LucideIcon;
-  badge?: string;
-}
-
-type CalcFunction =
-  | "sin"
-  | "cos"
-  | "tan"
-  | "asin"
-  | "acos"
-  | "atan"
-  | "sinh"
-  | "cosh"
-  | "tanh"
-  | "ln"
-  | "log"
-  | "exp"
-  | "sqrt"
-  | "cbrt"
-  | "square"
-  | "cube"
-  | "inv"
-  | "abs"
-  | "fact";
-
-export interface CasioCalculatorProps {
-  onClose?: () => void;
-}
-
-const DISPLAY_FORMAT_SEQUENCE: DisplayFormat[] = ["NORM", "SCI", "FIX", "ENG"];
-const ANGLE_MODE_SEQUENCE: AngleMode[] = ["DEG", "RAD", "GRAD"];
-
-const DEFAULT_VARIABLES: Variables = {
-  A: 0,
-  B: 0,
-  C: 0,
-  D: 0,
-  E: 0,
-  F: 0,
-  X: 0,
-  Y: 0,
-  Z: 0,
-  M: 0,
-  Ans: 0,
-};
-
-const MAX_HISTORY_ITEMS = 50;
-
-const rotate = <T,>(items: T[], current: T) => {
-  const index = items.indexOf(current);
-  if (index === -1) {
-    return items[0];
-  }
-  return items[(index + 1) % items.length];
-};
-
-const factorial = (value: number): number => {
-  if (value < 0 || !Number.isInteger(value)) {
-    return Number.NaN;
-  }
-  if (value <= 1) {
-    return 1;
-  }
-  return value * factorial(value - 1);
-};
-
-const clampPosition = (x: number, y: number, element: HTMLElement | null) => {
-  if (!element) {
-    return { x, y };
-  }
-  const rect = element.getBoundingClientRect();
-  const maxX = Math.max(0, window.innerWidth - rect.width);
-  const maxY = Math.max(0, window.innerHeight - rect.height);
-  return {
-    x: Math.min(Math.max(0, x), maxX),
-    y: Math.min(Math.max(0, y), maxY),
-  };
-};
-
-const formatNumber = (value: number, mode: DisplayFormat): string => {
-  if (!Number.isFinite(value)) {
-    return value.toString();
-  }
-
-  if (mode === "SCI") {
-    return value.toExponential(8);
-  }
-
-  if (mode === "ENG") {
-    if (value === 0) {
-      return "0";
-    }
-    const exponent = Math.floor(Math.log10(Math.abs(value)) / 3) * 3;
-    const mantissa = value / Math.pow(10, exponent);
-    return `${mantissa.toFixed(6)}E${exponent}`;
-  }
-
-  if (mode === "FIX") {
-    return value.toFixed(4);
-  }
-
-  if (Math.abs(value) < 0.00001 || Math.abs(value) > 1e10) {
-    return value.toExponential(8);
-  }
-
-  return value.toString();
-};
-
-const sanitizeExpression = (expression: string, variables: Variables) => {
-  return expression
+const NORMALISE = (expression: string) =>
+  expression
     .replace(/×/g, "*")
     .replace(/÷/g, "/")
-    .replace(/π/g, "pi")
-    .replace(/√/g, "sqrt")
-    .replace(/Ans/g, variables.Ans.toString());
-};
+    .replace(/−/g, "-")
+    .replace(/,/g, ".")
+    .replace(/\s+/g, " ");
 
-const CasioCalculatorBase: React.FC<CasioCalculatorProps> = () => {
-  const [display, setDisplay] = useState<string>("0");
-  const [history, setHistory] = useState<HistoryEntry[]>([]);
-  const [mode, setMode] = useState<ModeId>("CALC");
-  const [angleMode, setAngleMode] = useState<AngleMode>("DEG");
-  const [displayFormat, setDisplayFormat] = useState<DisplayFormat>("NORM");
-  const [showMenu, setShowMenu] = useState(false);
-  const [showCatalog, setShowCatalog] = useState(false);
-  const [variables, setVariables] = useState<Variables>(DEFAULT_VARIABLES);
-
-  const modes = useMemo<Mode[]>(
-    () => [
-      { id: "CALC", name: "Calculate", description: "Podstawowe", Icon: CalculatorIcon },
-      { id: "CMPLX", name: "Complex", description: "Zespolone", badge: "ℂ" },
-      { id: "BASE-N", name: "Base-N", description: "Systemy", Icon: Binary },
-      { id: "STAT", name: "Statistics", description: "Statystyka", Icon: TrendingUp },
-      { id: "EQN", name: "Equation", description: "Równania", Icon: Sigma },
-      { id: "MATRIX", name: "Matrix", description: "Macierze", Icon: Grid3x3 },
-      { id: "TABLE", name: "Table", description: "Tabele", Icon: Table2 },
-      { id: "SHEET", name: "Sheet", description: "Arkusz", Icon: FileSpreadsheet },
-    ],
-    [],
-  );
-
-  const constants = useMemo(
-    () => ({
-      π: Math.PI,
-      e: Math.E,
-      φ: (1 + Math.sqrt(5)) / 2,
-      c: 299_792_458,
-      h: 6.626_070_15e-34,
-      G: 6.6743e-11,
-      NA: 6.022_140_76e23,
-      R: 8.314_462_618,
-      k: 1.380_649e-23,
-    }),
-    [],
-  );
-
-  const appendToDisplay = (value: string) => {
-    setDisplay((prev) => {
-      if (prev === "0" || prev === "Math ERROR") {
-        return value;
-      }
-      return `${prev}${value}`;
-    });
-  };
-
-  const addToHistory = (expr: string, resultValue: string) => {
-    setHistory((prev) => {
-      const next: HistoryEntry[] = [
-        {
-          expr,
-          result: resultValue,
-          mode,
-          timestamp: new Date().toLocaleTimeString(),
-        },
-        ...prev,
-      ];
-      return next.slice(0, MAX_HISTORY_ITEMS);
-    });
-  };
-
-  const calculate = () => {
-    const expr = display;
-    try {
-      const processed = sanitizeExpression(expr, variables);
-      const scope = { ...variables };
-      const result = evaluate(processed, scope);
-
-      let numericResult: number | null = null;
-
-      if (typeof result === "number") {
-        numericResult = result;
-      } else if (typeof result === "string") {
-        const parsed = Number(result);
-        numericResult = Number.isNaN(parsed) ? null : parsed;
-      }
-
-      const formatted =
-        numericResult !== null
-          ? formatNumber(numericResult, displayFormat)
-          : format(result, { precision: 10 });
-
-      if (numericResult !== null) {
-        setVariables((prev) => ({ ...prev, Ans: numericResult! }));
-      }
-
-      addToHistory(expr, formatted);
-      setDisplay(formatted);
-    } catch (error) {
-      setDisplay("Math ERROR");
-      window.setTimeout(() => setDisplay("0"), 1500);
-    }
-  };
-
-  const handleFunction = (fn: CalcFunction) => {
-    const parsed = Number.parseFloat(display);
-    if (!Number.isFinite(parsed)) {
-      setDisplay("Math ERROR");
-      return;
-    }
-
-    const toRadians = (value: number) => {
-      if (angleMode === "DEG") {
-        return (value * Math.PI) / 180;
-      }
-      if (angleMode === "GRAD") {
-        return (value * Math.PI) / 200;
-      }
-      return value;
-    };
-
-    const fromRadians = (value: number) => {
-      if (angleMode === "DEG") {
-        return (value * 180) / Math.PI;
-      }
-      if (angleMode === "GRAD") {
-        return (value * 200) / Math.PI;
-      }
-      return value;
-    };
-
-    let result: number;
-
-    switch (fn) {
-      case "sin":
-        result = Math.sin(toRadians(parsed));
-        break;
-      case "cos":
-        result = Math.cos(toRadians(parsed));
-        break;
-      case "tan":
-        result = Math.tan(toRadians(parsed));
-        break;
-      case "asin":
-        result = fromRadians(Math.asin(parsed));
-        break;
-      case "acos":
-        result = fromRadians(Math.acos(parsed));
-        break;
-      case "atan":
-        result = fromRadians(Math.atan(parsed));
-        break;
-      case "sinh":
-        result = Math.sinh(parsed);
-        break;
-      case "cosh":
-        result = Math.cosh(parsed);
-        break;
-      case "tanh":
-        result = Math.tanh(parsed);
-        break;
-      case "ln":
-        result = Math.log(parsed);
-        break;
-      case "log":
-        result = Math.log10(parsed);
-        break;
-      case "exp":
-        result = Math.exp(parsed);
-        break;
-      case "sqrt":
-        result = Math.sqrt(parsed);
-        break;
-      case "cbrt":
-        result = Math.cbrt(parsed);
-        break;
-      case "square":
-        result = parsed * parsed;
-        break;
-      case "cube":
-        result = parsed * parsed * parsed;
-        break;
-      case "inv":
-        result = 1 / parsed;
-        break;
-      case "abs":
-        result = Math.abs(parsed);
-        break;
-      case "fact":
-        result = factorial(Math.floor(parsed));
-        break;
-      default:
-        return;
-    }
-
-    if (!Number.isFinite(result)) {
-      setDisplay("Math ERROR");
-      return;
-    }
-
-    const formatted = formatNumber(result, displayFormat);
-    addToHistory(`${fn}(${parsed})`, formatted);
-    setDisplay(formatted);
-    setVariables((prev) => ({ ...prev, Ans: result }));
-  };
-
-  const clearAll = () => {
-    setDisplay("0");
-    setShowCatalog(false);
-    setShowMenu(false);
-  };
-
-  const backspace = () => {
-    setDisplay((prev) => {
-      if (prev === "Math ERROR") {
-        return "0";
-      }
-      if (prev.length <= 1) {
-        return "0";
-      }
-      return prev.slice(0, -1);
-    });
-  };
-
-  const selectConstant = (value: number) => {
-    appendToDisplay(formatNumber(value, displayFormat));
-    setShowCatalog(false);
-  };
-
-  return (
-    <div className="casio-calculator" role="application" aria-label="Casio fx-991CW inspired calculator">
-      <header className="casio-header">
-        <div className="casio-brand">
-          <span className="casio-brand__name">CASIO</span>
-          <span className="casio-brand__model">fx-991CW ClassWiz</span>
-        </div>
-        <div className="casio-header__actions">
-          <button
-            type="button"
-            className="casio-header__button"
-            onClick={() => setShowCatalog((value) => !value)}
-            aria-label="Stałe"
-          >
-            Σ
-          </button>
-          <button
-            type="button"
-            className="casio-header__button"
-            onClick={() => setShowMenu((value) => !value)}
-            aria-label="Tryby"
-          >
-            MENU
-          </button>
-        </div>
-      </header>
-
-      {showMenu && (
-        <div className="casio-mode-selector">
-          <div className="casio-mode-grid">
-            {modes.map(({ id, name, description, Icon, badge }) => (
-              <button
-                key={id}
-                type="button"
-                className={`casio-mode-card${id === mode ? " casio-mode-card--active" : ""}`}
-                onClick={() => {
-                  setMode(id);
-                  setShowMenu(false);
-                }}
-              >
-                <div className="casio-mode-card__icon">
-                  {Icon ? <Icon size={24} /> : <span>{badge}</span>}
-                </div>
-                <div className="casio-mode-card__name">{name}</div>
-                <div className="casio-mode-card__desc">{description}</div>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {showCatalog && (
-        <div className="casio-catalog">
-          <div className="casio-catalog__header">
-            <span>Stałe</span>
-            <button
-              type="button"
-              onClick={() => setShowCatalog(false)}
-              className="casio-catalog__close"
-              aria-label="Zamknij katalog stałych"
-            >
-              ×
-            </button>
-          </div>
-          <div className="casio-catalog__grid">
-            {Object.entries(constants).map(([symbol, value]) => (
-              <button
-                key={symbol}
-                type="button"
-                className="casio-catalog__item"
-                onClick={() => selectConstant(value)}
-              >
-                <span className="casio-catalog__symbol">{symbol}</span>
-                <span className="casio-catalog__value">{formatNumber(value, displayFormat)}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="casio-status-bar">
-        <span className="casio-status-pill casio-status-pill--mode">{mode}</span>
-        <span className="casio-status-pill">{angleMode}</span>
-        <span className="casio-status-pill">{displayFormat}</span>
-      </div>
-
-      <div className="casio-display">
-        <div className="casio-display__value">{display}</div>
-        <div className="casio-display__footer">
-          Ans = {formatNumber(variables.Ans, displayFormat)}
-        </div>
-      </div>
-
-      <div className="casio-history">
-        {history.slice(0, 3).map((item) => (
-          <button
-            key={`${item.timestamp}-${item.expr}`}
-            type="button"
-            className="casio-history__item"
-            onClick={() => setDisplay(item.result)}
-          >
-            {item.result}
-          </button>
-        ))}
-      </div>
-
-      <div className="casio-control-grid">
-        <button
-          type="button"
-          className="casio-control-button"
-          onClick={() => setAngleMode((prev) => rotate(ANGLE_MODE_SEQUENCE, prev))}
-        >
-          {angleMode}
-        </button>
-        <button
-          type="button"
-          className="casio-control-button"
-          onClick={() => setDisplayFormat((prev) => rotate(DISPLAY_FORMAT_SEQUENCE, prev))}
-        >
-          {displayFormat}
-        </button>
-      </div>
-
-      <div className="casio-science">
-        <div className="casio-science__row">
-          <CalculatorButton label="sin" onClick={() => handleFunction("sin")} variant="function" />
-          <CalculatorButton label="cos" onClick={() => handleFunction("cos")} variant="function" />
-          <CalculatorButton label="tan" onClick={() => handleFunction("tan")} variant="function" />
-          <CalculatorButton label="ln" onClick={() => handleFunction("ln")} variant="function" />
-          <CalculatorButton label="log" onClick={() => handleFunction("log")} variant="function" />
-        </div>
-        <div className="casio-science__row">
-          <CalculatorButton label="sin-1" onClick={() => handleFunction("asin")} variant="function" />
-          <CalculatorButton label="cos-1" onClick={() => handleFunction("acos")} variant="function" />
-          <CalculatorButton label="tan-1" onClick={() => handleFunction("atan")} variant="function" />
-          <CalculatorButton label="exp" onClick={() => handleFunction("exp")} variant="function" />
-          <CalculatorButton label="10^" onClick={() => appendToDisplay("10^")} variant="function" />
-        </div>
-        <div className="casio-science__row">
-          <CalculatorButton label="x^2" onClick={() => handleFunction("square")} variant="function" />
-          <CalculatorButton label="x^3" onClick={() => handleFunction("cube")} variant="function" />
-          <CalculatorButton label="sqrt" onClick={() => handleFunction("sqrt")} variant="function" />
-          <CalculatorButton label="cbrt" onClick={() => handleFunction("cbrt")} variant="function" />
-          <CalculatorButton label="n!" onClick={() => handleFunction("fact")} variant="function" />
-        </div>
-        <div className="casio-science__row">
-          <CalculatorButton label="(" onClick={() => appendToDisplay("(")} variant="bracket" />
-          <CalculatorButton label=")" onClick={() => appendToDisplay(")")} variant="bracket" />
-          <CalculatorButton label="|x|" onClick={() => handleFunction("abs")} variant="function" />
-          <CalculatorButton label="1/x" onClick={() => handleFunction("inv")} variant="function" />
-          <CalculatorButton label="Ans" onClick={() => appendToDisplay("Ans")} variant="function" />
-        </div>
-      </div>
-
-      <div className="casio-keypad">
-        <div className="casio-keypad__row">
-          <CalculatorButton label="AC" onClick={clearAll} variant="clear" />
-          <CalculatorButton label="DEL" onClick={backspace} variant="delete" />
-          <CalculatorButton label="(" onClick={() => appendToDisplay("(")} variant="bracket" />
-          <CalculatorButton label=")" onClick={() => appendToDisplay(")")} variant="bracket" />
-        </div>
-        <div className="casio-keypad__row">
-          <CalculatorButton label="7" onClick={() => appendToDisplay("7")} variant="number" />
-          <CalculatorButton label="8" onClick={() => appendToDisplay("8")} variant="number" />
-          <CalculatorButton label="9" onClick={() => appendToDisplay("9")} variant="number" />
-          <CalculatorButton label="÷" onClick={() => appendToDisplay("÷")} variant="operator" />
-        </div>
-        <div className="casio-keypad__row">
-          <CalculatorButton label="4" onClick={() => appendToDisplay("4")} variant="number" />
-          <CalculatorButton label="5" onClick={() => appendToDisplay("5")} variant="number" />
-          <CalculatorButton label="6" onClick={() => appendToDisplay("6")} variant="number" />
-          <CalculatorButton label="×" onClick={() => appendToDisplay("×")} variant="operator" />
-        </div>
-        <div className="casio-keypad__row">
-          <CalculatorButton label="1" onClick={() => appendToDisplay("1")} variant="number" />
-          <CalculatorButton label="2" onClick={() => appendToDisplay("2")} variant="number" />
-          <CalculatorButton label="3" onClick={() => appendToDisplay("3")} variant="number" />
-          <CalculatorButton label="-" onClick={() => appendToDisplay("-")} variant="operator" />
-        </div>
-        <div className="casio-keypad__row">
-          <CalculatorButton label="0" onClick={() => appendToDisplay("0")} variant="number" />
-          <CalculatorButton label="." onClick={() => appendToDisplay(".")} variant="number" />
-          <CalculatorButton label="π" onClick={() => appendToDisplay("π")} variant="constant" />
-          <CalculatorButton label="+" onClick={() => appendToDisplay("+")} variant="operator" />
-        </div>
-        <div className="casio-keypad__row casio-keypad__row--full">
-          <CalculatorButton label="=" onClick={calculate} variant="execute" />
-        </div>
-      </div>
-    </div>
-  );
-};
-
-interface CalculatorButtonProps {
-  label: React.ReactNode;
-  onClick: () => void;
-  variant?:
-    | "number"
-    | "operator"
-    | "function"
-    | "constant"
-    | "clear"
-    | "delete"
-    | "execute"
-    | "bracket";
+export interface CasioCalculatorProps {
+  onClose: () => void;
 }
 
-const CalculatorButton: React.FC<CalculatorButtonProps> = ({ label, onClick, variant }) => {
-  const classNames = ["casio-btn"];
-  if (variant) {
-    classNames.push(`casio-btn--${variant}`);
-  }
-  return (
-    <button type="button" className={classNames.join(" ")} onClick={onClick}>
-      {label}
-    </button>
-  );
-};
-
-const DraggableCasioCalculator: React.FC<CasioCalculatorProps> = (props) => {
-  const wrapperRef = useRef<HTMLDivElement>(null);
-  const [position, setPosition] = useState<{ x: number; y: number }>({ x: 64, y: 64 });
-  const [dragging, setDragging] = useState(false);
-  const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
-
-  const updatePosition = useCallback(
-    (rawX: number, rawY: number) => {
-      setPosition((prev) => {
-        const next = clampPosition(rawX, rawY, wrapperRef.current);
-        return prev.x === next.x && prev.y === next.y ? prev : next;
-      });
-    },
-    [],
-  );
+const CasioCalculator: React.FC<CasioCalculatorProps> = ({ onClose }) => {
+  const [expression, setExpression] = useState("");
+  const [result, setResult] = useState("0");
+  const [error, setError] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const header = wrapperRef.current?.querySelector(".casio-header") as HTMLElement | null;
-    if (!header) {
-      return;
-    }
-
-    const handleMouseDown = (event: MouseEvent) => {
-      const target = event.target as HTMLElement | null;
-      if (target?.closest("button")) {
-        return;
-      }
-      const rect = wrapperRef.current?.getBoundingClientRect();
-      dragOffsetRef.current = {
-        x: event.clientX - (rect?.left ?? 0),
-        y: event.clientY - (rect?.top ?? 0),
-      };
-      setDragging(true);
-      event.preventDefault();
-    };
-
-    const handleTouchStart = (event: TouchEvent) => {
-      const target = event.target as HTMLElement | null;
-      if (target?.closest("button")) {
-        return;
-      }
-      const touch = event.touches[0];
-      const rect = wrapperRef.current?.getBoundingClientRect();
-      dragOffsetRef.current = {
-        x: touch.clientX - (rect?.left ?? 0),
-        y: touch.clientY - (rect?.top ?? 0),
-      };
-      setDragging(true);
-      event.preventDefault();
-    };
-
-    header.addEventListener("mousedown", handleMouseDown);
-    header.addEventListener("touchstart", handleTouchStart, { passive: false });
-
-    return () => {
-      header.removeEventListener("mousedown", handleMouseDown);
-      header.removeEventListener("touchstart", handleTouchStart);
-    };
+    inputRef.current?.focus();
   }, []);
 
   useEffect(() => {
-    if (!dragging) {
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+      if (event.key === "Enter" || event.key === "=") {
+        event.preventDefault();
+        evaluateExpression();
+        return;
+      }
+      if (event.key === "Backspace") {
+        event.preventDefault();
+        setExpression((prev) => prev.slice(0, -1));
+        setError(null);
+      }
+    };
+
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  });
+
+  const appendValue = (value: string) => {
+    setExpression((prev) => `${prev}${value}`);
+    setError(null);
+  };
+
+  const clearExpression = () => {
+    setExpression("");
+    setResult("0");
+    setError(null);
+  };
+
+  const evaluateExpression = () => {
+    if (!expression.trim()) {
+      setResult("0");
+      setError(null);
       return;
     }
 
-    const handlePointerMove = (event: MouseEvent | TouchEvent) => {
-      const source =
-        "touches" in event ? event.touches[0] : ("clientX" in event ? event : null);
-      if (!source) {
-        return;
+    try {
+      const normalised = NORMALISE(expression);
+      const evaluated = evaluate(normalised);
+      const formatted =
+        typeof evaluated === "number" ? format(evaluated, { precision: 12 }) : String(evaluated);
+      setResult(formatted);
+      setError(null);
+    } catch (evaluationError) {
+      console.error("Calculator evaluation error", evaluationError);
+      setError("Błąd we wzorze");
+    }
+  };
+
+  const preview = useMemo(() => {
+    if (!expression.trim()) {
+      return "0";
+    }
+    try {
+      const normalised = NORMALISE(expression);
+      const value = evaluate(normalised);
+      if (typeof value === "number" && Number.isFinite(value)) {
+        return format(value, { precision: 10 });
       }
-      const rawX = source.clientX - dragOffsetRef.current.x;
-      const rawY = source.clientY - dragOffsetRef.current.y;
-      updatePosition(rawX, rawY);
-      event.preventDefault?.();
-    };
-
-    const stopDragging = () => {
-      setDragging(false);
-    };
-
-    window.addEventListener("mousemove", handlePointerMove);
-    window.addEventListener("mouseup", stopDragging);
-    window.addEventListener("touchmove", handlePointerMove, { passive: false });
-    window.addEventListener("touchend", stopDragging);
-    window.addEventListener("touchcancel", stopDragging);
-
-    return () => {
-      window.removeEventListener("mousemove", handlePointerMove);
-      window.removeEventListener("mouseup", stopDragging);
-      window.removeEventListener("touchmove", handlePointerMove);
-      window.removeEventListener("touchend", stopDragging);
-      window.removeEventListener("touchcancel", stopDragging);
-    };
-  }, [dragging, updatePosition]);
-
-  useEffect(() => {
-    const handleResize = () => {
-      setPosition((prev) => clampPosition(prev.x, prev.y, wrapperRef.current));
-    };
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+      return String(value);
+    } catch {
+      return null;
+    }
+  }, [expression]);
 
   return (
-    <div
-      ref={wrapperRef}
-      className={`casio-calculator-wrapper${dragging ? " dragging" : ""}`}
-      style={{ transform: `translate3d(${position.x}px, ${position.y}px, 0)` }}
-      role="presentation"
-    >
-      <CasioCalculatorBase {...props} />
+    <div className="calculator-overlay" role="dialog" aria-modal="true" aria-label="Kalkulator">
+      <div className="calculator-container">
+        <header className="calculator-header">
+          <h2>Kalkulator</h2>
+          <button type="button" className="calculator-close" onClick={onClose} aria-label="Zamknij">
+            ×
+          </button>
+        </header>
+
+        <div className="calculator-display">
+          <input
+            ref={inputRef}
+            className="calculator-input"
+            value={expression}
+            onChange={(event) => {
+              setExpression(event.target.value);
+              setError(null);
+            }}
+            placeholder="0"
+            autoFocus
+          />
+          <div className={`calculator-preview${error ? " calculator-preview--error" : ""}`}>
+            {error ?? preview ?? result}
+          </div>
+        </div>
+
+        <div className="calculator-grid">
+          {BUTTONS.map((button, index) => {
+            const key = `${button.label}-${index}`;
+            if ("action" in button) {
+              if (button.action === "clear") {
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    className="calculator-button calculator-button--action"
+                    style={button.span ? { gridColumn: `span ${button.span}` } : undefined}
+                    onClick={clearExpression}
+                  >
+                    {button.label}
+                  </button>
+                );
+              }
+              if (button.action === "backspace") {
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    className="calculator-button calculator-button--action"
+                    style={button.span ? { gridColumn: `span ${button.span}` } : undefined}
+                    onClick={() => {
+                      setExpression((prev) => prev.slice(0, -1));
+                      setError(null);
+                    }}
+                  >
+                    {button.label}
+                  </button>
+                );
+              }
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  className="calculator-button calculator-button--equals"
+                  style={button.span ? { gridColumn: `span ${button.span}` } : undefined}
+                  onClick={evaluateExpression}
+                >
+                  {button.label}
+                </button>
+              );
+            }
+
+            return (
+              <button
+                key={key}
+                type="button"
+                className={`calculator-button${
+                  button.variant === "operator" ? " calculator-button--operator" : ""
+                }`}
+                style={button.span ? { gridColumn: `span ${button.span}` } : undefined}
+                onClick={() => appendValue(button.value)}
+              >
+                {button.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 };
 
-export default DraggableCasioCalculator;
-
-
-
+export default CasioCalculator;
 
