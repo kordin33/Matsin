@@ -134,14 +134,14 @@ export const StudentLinkDialog = ({
         }
         if (!teacherToken) {
           setErrorMessage(
-            "Brakuje tokenu nauczyciela. Otw\u00f3rz tablic\u0119 korzystaj\u0105c z linku wygenerowanego w panelu administratora.",
+            "Brakuje tokenu nauczyciela. Otwórz tablicę korzystając z linku wygenerowanego w panelu administratora.",
           );
           return;
         }
         setErrorMessage(null);
         const list = await apiClient.listTeacherPermalinks(teacherId, teacherToken);
         const mapped: StudentLink[] = (list.items || []).map((item) => {
-          const name = item.student_name || "Ucze\u0144";
+          const name = item.student_name || "Uczeń";
           const url = `${window.location.origin}${window.location.pathname}?permalink=${encodeURIComponent(
             item.permalink,
           )}${name ? `&student=${encodeURIComponent(name)}` : ""}`;
@@ -174,7 +174,7 @@ export const StudentLinkDialog = ({
       } catch (error) {
         console.error("Failed to fetch student links", error);
         setErrorMessage(
-          "Nie uda\u0142o si\u0119 pobra\u0107 zapisanych link\u00f3w. Spr\u00f3buj ponownie p\u00f3\u017aniej.",
+          "Nie udało się pobrać zapisanych linków. Spróbuj ponownie później.",
         );
       }
     })();
@@ -206,7 +206,7 @@ export const StudentLinkDialog = ({
 
     if (!teacherToken) {
       setErrorMessage(
-        "Brakuje tokenu nauczyciela. Upewnij si\u0119, \u017ce korzystasz z linku udost\u0119pnionego przez administratora.",
+        "Brakuje tokenu nauczyciela. Upewnij się, że korzystasz z linku udostępnionego przez administratora.",
       );
       return;
     }
@@ -220,7 +220,7 @@ export const StudentLinkDialog = ({
 
       if (exists) {
         alert(
-          `Link dla ucznia "${name}" ju\u017c istnieje. U\u017cyj istniej\u0105cego linku lub usu\u0144 go, aby stworzy\u0107 nowy.`,
+          `Link dla ucznia "${name}" już istnieje. Użyj istniejącego linku lub usuń go, aby stworzyć nowy.`,
         );
         return;
       }
@@ -255,7 +255,7 @@ export const StudentLinkDialog = ({
       setErrorMessage(null);
     } catch (error) {
       console.error("Failed to create student link", error);
-      setErrorMessage("Nie uda\u0142o si\u0119 utworzy\u0107 linku. Spr\u00f3buj ponownie.");
+      setErrorMessage("Nie udało się utworzyć linku. Spróbuj ponownie.");
     } finally {
       setIsCreating(false);
     }
@@ -295,7 +295,7 @@ export const StudentLinkDialog = ({
     } catch (error) {
       console.error("Unable to join student room", error);
       setErrorMessage(
-        "Nie uda\u0142o si\u0119 do\u0142\u0105czy\u0107 do tablicy ucznia. Sprawd\u017a po\u0142\u0105czenie i spr\u00f3buj ponownie.",
+        "Nie udało się dołączyć do tablicy ucznia. Sprawdź połączenie i spróbuj ponownie.",
       );
     }
   };
@@ -303,7 +303,7 @@ export const StudentLinkDialog = ({
   const deleteStudentLink = async (permalink: string) => {
     if (!teacherToken) {
       setErrorMessage(
-        "Brakuje tokenu nauczyciela. Nie mo\u017cna usun\u0105\u0107 linku bez poprawnej autoryzacji.",
+        "Brakuje tokenu nauczyciela. Nie można usunąć linku bez poprawnej autoryzacji.",
       );
       return;
     }
@@ -318,7 +318,7 @@ export const StudentLinkDialog = ({
       setErrorMessage(null);
     } catch (error) {
       console.error("Unable to delete student link", error);
-      setErrorMessage("Nie uda\u0142o si\u0119 usun\u0105\u0107 linku. Spr\u00f3buj ponownie.");
+      setErrorMessage("Nie udało się usunąć linku. Spróbuj ponownie.");
     }
   };
 
@@ -334,8 +334,8 @@ export const StudentLinkDialog = ({
         <header className="StudentLinkDialog__header">
           <span className="StudentLinkDialog__headerIcon">{usersIcon}</span>
           <div className="StudentLinkDialog__headerCopy">
-            <h2>Panel uczni\u00f3w</h2>
-            <p>Zarz\u0105dzaj sta\u0142ymi zaproszeniami i do\u0142\u0105czaj do tablic uczni\u00f3w w kilka sekund.</p>
+            <h2>Panel uczniów</h2>
+            <p>Zarządzaj stałymi zaproszeniami i dołączaj do tablic uczniów w kilka sekund.</p>
           </div>
         </header>
 
@@ -364,12 +364,12 @@ export const StudentLinkDialog = ({
         <section className="StudentLinkDialog__card StudentLinkDialog__create">
           <div className="StudentLinkDialog__cardHeader">
             <h3>Dodaj ucznia</h3>
-            <p>Podaj imi\u0119 i nazwisko, aby wygenerowa\u0107 sta\u0142y link.</p>
+            <p>Podaj imię i nazwisko, aby wygenerować stały link.</p>
           </div>
           <div className="StudentLinkDialog__form">
             <TextField
               ref={inputRef}
-              placeholder="Imi\u0119 i nazwisko ucznia"
+              placeholder="Imię i nazwisko ucznia"
               value={newStudentName}
               onChange={setNewStudentName}
               onKeyDown={(event) => {
@@ -380,7 +380,7 @@ export const StudentLinkDialog = ({
             />
             <FilledButton
               size="large"
-              label={isCreating ? "Tworzenie..." : "Utw\u00f3rz link"}
+              label={isCreating ? "Tworzenie..." : "Utwórz link"}
               icon={LinkIcon}
               onClick={createStudentLink}
             />
@@ -404,7 +404,7 @@ export const StudentLinkDialog = ({
                     <FilledButton
                       size="medium"
                       variant="outlined"
-                      label="Do\u0142\u0105cz"
+                      label="Dołącz"
                       onClick={() => joinStudent(link.roomId, link.roomKey)}
                     />
                     <FilledButton
@@ -419,9 +419,9 @@ export const StudentLinkDialog = ({
                       size="medium"
                       variant="outlined"
                       color="danger"
-                      label="Usu\u0144"
+                      label="Usuń"
                       onClick={() => {
-                        if (confirm(`Czy usun\u0105\u0107 link dla ${link.studentName}?`)) {
+                        if (confirm(`Czy usunąć link dla ${link.studentName}?`)) {
                           deleteStudentLink(link.permalink);
                         }
                       }}
@@ -432,7 +432,7 @@ export const StudentLinkDialog = ({
             </ul>
           ) : (
             <div className="StudentLinkDialog__empty">
-              <p>Nie masz jeszcze link\u00f3w uczni\u00f3w. Dodaj pierwszego, aby zobaczy\u0107 go na li\u015bcie.</p>
+              <p>Nie masz jeszcze linków uczniów. Dodaj pierwszego, aby zobaczyć go na liście.</p>
             </div>
           )}
         </section>
