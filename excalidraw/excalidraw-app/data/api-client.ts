@@ -1,10 +1,18 @@
 ﻿import type { SyncableExcalidrawElement } from "./index";
 
-const getServerUrl = () => {
+export const getServerUrl = () => {
   if (typeof window !== 'undefined') {
-    return import.meta.env.VITE_APP_BACKEND_URL || 'https://websocket-production-e339.up.railway.app';
+    return (
+      import.meta.env.VITE_APP_WS_SERVER_URL ||
+      import.meta.env.VITE_APP_BACKEND_URL ||
+      'https://websocket-production-e339.up.railway.app'
+    );
   }
-  return process.env.BACKEND_URL || 'http://localhost';
+  return (
+    process.env.WS_SERVER_URL ||
+    process.env.BACKEND_URL ||
+    'http://localhost'
+  );
 };
 
 export interface ApiScene {

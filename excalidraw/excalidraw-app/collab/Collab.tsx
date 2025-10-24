@@ -88,7 +88,7 @@ import {
   saveUsernameToLocalStorage,
 } from "../data/localStorage";
 import { resetBrowserStateVersions } from "../data/tabSync";
-import { apiClient } from "../data/api-client";
+import { apiClient, getServerUrl } from "../data/api-client";
 
 import { collabErrorIndicatorAtom } from "./CollabError";
 import Portal from "./Portal";
@@ -532,9 +532,12 @@ class Collab extends PureComponent<CollabProps, CollabState> {
     this.fallbackInitializationHandler = fallbackInitializationHandler;
 
     try {
+      const realtimeServerUrl = getServerUrl();
+
       this.portal.socket = this.portal.open(
-        socketIOClient(((import.meta as any)?.env?.VITE_APP_WS_SERVER_URL || (import.meta as any)?.env?.VITE_APP_BACKEND_URL || (typeof window !== 'undefined' ? window.location.origin : '')), {
+        socketIOClient(realtimeServerUrl, {
           transports: ["websocket", "polling"],
+          withCredentials: true,
         }),
         roomId,
         roomKey,
