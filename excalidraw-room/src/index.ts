@@ -82,7 +82,7 @@ app.options("*", corsMiddleware);
 const port = Number(process.env.PORT || 3002); // default port to listen
 
 // Middleware
-app.use(express.json({ limit: "2mb" }));
+app.use(express.json({ limit: "15mb" }));
 app.use(express.static("public"));
 
 // Health check
@@ -137,6 +137,15 @@ async function initDb() {
         is_active BOOLEAN DEFAULT TRUE
       );
 
+      CREATE TABLE IF NOT EXISTS room_files (
+        room_id TEXT NOT NULL,
+        file_id TEXT NOT NULL,
+        data BYTEA NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW(),
+        PRIMARY KEY (room_id, file_id)
+      );
+
       CREATE INDEX IF NOT EXISTS idx_permalinks_permalink ON permalinks(permalink);
       CREATE INDEX IF NOT EXISTS idx_permalinks_room_id ON permalinks(room_id);
       CREATE INDEX IF NOT EXISTS idx_permalinks_teacher_id ON permalinks(teacher_id);
@@ -144,6 +153,7 @@ async function initDb() {
       CREATE UNIQUE INDEX IF NOT EXISTS idx_permalinks_teacher_student
         ON permalinks(teacher_id, student_name)
         WHERE student_name IS NOT NULL AND teacher_id IS NOT NULL;
+      CREATE INDEX IF NOT EXISTS idx_room_files_room_id ON room_files(room_id);
     `);
     serverDebug("DB initialized or already present");
   } finally {
@@ -263,6 +273,92 @@ app.post("/api/scenes/:roomId", async (req, res) => {
     return res.json({ ok: true });
   } catch (err) {
     console.error("POST /api/scenes/:roomId error", err);
+    return res.status(500).json({ error: "internal_error" });
+  }
+});
+
+app.post("/api/rooms/:roomId/files", async (req, res) => {
+  if (!pool) return res.status(500).json({ error: "db_unavailable" });
+  const { roomId } = req.params;
+  const files = Array.isArray(req.body?.files) ? req.body.files : [];
+
+  if (!files.length) {
+    return res.json({ savedFiles: [], erroredFiles: [] });
+  }
+
+  const client = await pool.connect();
+  const savedFiles: string[] = [];
+  const erroredFiles: string[] = [];
+
+  try {
+    for (const file of files) {
+      const id = typeof file?.id === "string" ? file.id : null;
+      const data = typeof file?.data === "string" ? file.data : null;
+
+      if (!id || !data) {
+        if (id) {
+          erroredFiles.push(id);
+        }
+        continue;
+      }
+
+      try {
+        const buffer = Buffer.from(data, "base64");
+        await client.query(
+          `INSERT INTO room_files (room_id, file_id, data)
+           VALUES ($1, $2, $3)
+           ON CONFLICT (room_id, file_id)
+           DO UPDATE SET data = EXCLUDED.data, updated_at = NOW()`,
+          [roomId, id, buffer],
+        );
+        savedFiles.push(id);
+      } catch (error) {
+        console.error("Failed to persist file", error);
+        erroredFiles.push(id);
+      }
+    }
+
+    return res.json({ savedFiles, erroredFiles });
+  } catch (error) {
+    console.error("POST /api/rooms/:roomId/files error", error);
+    return res.status(500).json({ error: "internal_error" });
+  } finally {
+    client.release();
+  }
+});
+
+app.post("/api/rooms/:roomId/files/batch", async (req, res) => {
+  if (!pool) return res.status(500).json({ error: "db_unavailable" });
+  const { roomId } = req.params;
+  const ids = Array.isArray(req.body?.ids)
+    ? req.body.ids
+        .map((value: unknown) =>
+          typeof value === "string" ? value.trim() : "",
+        )
+        .filter(Boolean)
+    : [];
+
+  if (!ids.length) {
+    return res.json({ files: [], missing: [] });
+  }
+
+  try {
+    const result = await pool.query(
+      `SELECT file_id, data FROM room_files WHERE room_id = $1 AND file_id = ANY($2::text[])`,
+      [roomId, ids],
+    );
+
+    const files = result.rows.map((row) => ({
+      id: row.file_id,
+      data: Buffer.from(row.data).toString("base64"),
+    }));
+
+    const found = new Set(files.map((file) => file.id));
+    const missing = ids.filter((id) => !found.has(id));
+
+    return res.json({ files, missing });
+  } catch (error) {
+    console.error("POST /api/rooms/:roomId/files/batch error", error);
     return res.status(500).json({ error: "internal_error" });
   }
 });
@@ -439,9 +535,18 @@ app.get("/api/permalinks", async (req, res) => {
     const ok = await assertTeacherToken(teacher_id, token);
     if (!ok) return res.status(403).json({ error: "forbidden" });
     const result = await pool.query(
-      `SELECT permalink, room_id, room_key, student_name, created_at, last_accessed, is_active
-       FROM permalinks WHERE teacher_id = $1 AND is_active = TRUE
-       ORDER BY created_at DESC`,
+      `SELECT p.permalink,
+              p.room_id,
+              p.room_key,
+              p.student_name,
+              p.created_at,
+              p.last_accessed,
+              p.is_active,
+              t.name AS teacher_name
+       FROM permalinks p
+       LEFT JOIN teachers t ON t.teacher_id = p.teacher_id
+       WHERE p.teacher_id = $1 AND p.is_active = TRUE
+       ORDER BY p.created_at DESC`,
       [teacher_id],
     );
     return res.json({ items: result.rows });
@@ -484,8 +589,18 @@ app.get("/api/teachers/:teacherId/permalinks", async (req, res) => {
     const ok = await assertTeacherToken(teacherId, token);
     if (!ok) return res.status(403).json({ error: "forbidden" });
     const result = await pool.query(
-      `SELECT permalink, room_id, room_key, student_name, created_at, last_accessed, is_active
-       FROM permalinks WHERE teacher_id = $1 AND is_active = TRUE ORDER BY created_at DESC`,
+      `SELECT p.permalink,
+              p.room_id,
+              p.room_key,
+              p.student_name,
+              p.created_at,
+              p.last_accessed,
+              p.is_active,
+              t.name AS teacher_name
+       FROM permalinks p
+       LEFT JOIN teachers t ON t.teacher_id = p.teacher_id
+       WHERE p.teacher_id = $1 AND p.is_active = TRUE
+       ORDER BY p.created_at DESC`,
       [teacherId],
     );
     return res.json({ items: result.rows });

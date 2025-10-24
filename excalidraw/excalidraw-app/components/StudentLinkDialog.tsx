@@ -7,7 +7,6 @@ import { useState, useRef, useEffect } from "react";
 import { copyTextToSystemClipboard } from "@excalidraw/excalidraw/clipboard";
 import { atom } from "../app-jotai";
 import { generateCollaborationLinkData } from "../data";
-import { useCopyStatus } from "@excalidraw/excalidraw/hooks/useCopiedIndicator";
 import { apiClient } from "../data/api-client";
 
 import type { CollabAPI } from "../collab/Collab";
@@ -17,6 +16,7 @@ import "./StudentLinkDialog.scss";
 const STUDENT_LINKS_KEY = "matsin:studentLinks";
 const TEACHER_KEY = "matsin:teacherKey";
 const TEACHER_TOKEN_KEY = "matsin:teacherToken";
+const TEACHER_NAME_KEY = "matsin:teacherName";
 
 export const studentLinkDialogStateAtom = atom<
   { isOpen: false } | { isOpen: true }
@@ -72,6 +72,13 @@ export const StudentLinkDialog = ({
   const [studentLinks, setStudentLinks] = useState<StudentLink[]>(loadStudentLinks);
   const [newStudentName, setNewStudentName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+  const [teacherName, setTeacherName] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem(TEACHER_NAME_KEY);
+    } catch {
+      return null;
+    }
+  });
   const [teacherId] = useState<string>(() => {
     try {
       const url = new URL(window.location.href);
@@ -79,10 +86,6 @@ export const StudentLinkDialog = ({
       const fromStorage = localStorage.getItem(TEACHER_KEY);
       const value = fromUrl || fromStorage || Math.random().toString(36).slice(2, 12);
       localStorage.setItem(TEACHER_KEY, value);
-      if (fromUrl) {
-        url.searchParams.delete("teacher");
-        window.history.replaceState({}, document.title, url.toString());
-      }
       return value;
     } catch {
       const value = Math.random().toString(36).slice(2, 12);
@@ -100,11 +103,6 @@ export const StudentLinkDialog = ({
       if (value) {
         localStorage.setItem(TEACHER_TOKEN_KEY, value);
       }
-      if (fromUrl) {
-        url.searchParams.delete("t");
-        url.searchParams.delete("token");
-        window.history.replaceState({}, document.title, url.toString());
-      }
       return value;
     } catch {
       return localStorage.getItem(TEACHER_TOKEN_KEY);
@@ -113,10 +111,19 @@ export const StudentLinkDialog = ({
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const { onCopy, copyStatus } = useCopyStatus();
+  const copyTimeoutRef = useRef<number | null>(null);
+  const [copiedTarget, setCopiedTarget] = useState<string | null>(null);
 
   useEffect(() => {
     inputRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimeoutRef.current) {
+        window.clearTimeout(copyTimeoutRef.current);
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -149,6 +156,19 @@ export const StudentLinkDialog = ({
           };
         });
 
+        const remoteTeacherName =
+          list.items?.find(
+            (item) =>
+              typeof item.teacher_name === "string" &&
+              item.teacher_name.trim().length > 0,
+          )?.teacher_name?.trim() || null;
+        if (remoteTeacherName && remoteTeacherName !== teacherName) {
+          setTeacherName(remoteTeacherName);
+          try {
+            localStorage.setItem(TEACHER_NAME_KEY, remoteTeacherName);
+          } catch {}
+        }
+
         setStudentLinks(mapped);
         saveStudentLinks(mapped);
       } catch (error) {
@@ -159,6 +179,25 @@ export const StudentLinkDialog = ({
       }
     })();
   }, [teacherId, teacherToken]);
+
+  useEffect(() => {
+    if (!teacherToken || teacherName) {
+      return;
+    }
+    setTeacherName("Nauczyciel");
+    try {
+      localStorage.setItem(TEACHER_NAME_KEY, "Nauczyciel");
+    } catch {}
+  }, [teacherToken, teacherName]);
+
+  useEffect(() => {
+    if (!collabAPI || !teacherToken) {
+      return;
+    }
+    const displayName =
+      (teacherName && teacherName.trim().length > 0 ? teacherName.trim() : "Nauczyciel") || "Nauczyciel";
+    collabAPI.setUsername(displayName);
+  }, [collabAPI, teacherToken, teacherName]);
 
   const createStudentLink = async () => {
     if (!newStudentName.trim()) {
@@ -222,10 +261,20 @@ export const StudentLinkDialog = ({
     }
   };
 
-  const copyStudentLink = async (link: string) => {
+  const markCopied = (target: string) => {
+    if (copyTimeoutRef.current) {
+      window.clearTimeout(copyTimeoutRef.current);
+    }
+    setCopiedTarget(target);
+    copyTimeoutRef.current = window.setTimeout(() => {
+      setCopiedTarget(null);
+    }, 2000);
+  };
+
+  const copyStudentLink = async (link: string, target: string) => {
     try {
       await copyTextToSystemClipboard(link);
-      onCopy();
+      markCopied(target);
     } catch (error) {
       console.error("Unable to copy link", error);
     }
@@ -237,10 +286,14 @@ export const StudentLinkDialog = ({
     }
 
     try {
+      setErrorMessage(null);
       await collabAPI.startCollaboration({ roomId, roomKey });
       handleClose();
     } catch (error) {
       console.error("Unable to join student room", error);
+      setErrorMessage(
+        "Nie uda\u0142o si\u0119 do\u0142\u0105czy\u0107 do tablicy ucznia. Sprawd\u017a po\u0142\u0105czenie i spr\u00f3buj ponownie.",
+      );
     }
   };
 
@@ -292,6 +345,7 @@ export const StudentLinkDialog = ({
         <section className="StudentLinkDialog__card StudentLinkDialog__teacher">
           <div className="StudentLinkDialog__cardBody">
             <span className="StudentLinkDialog__label">Link nauczyciela</span>
+            <span className="StudentLinkDialog__teacherName">{teacherName || "Nauczyciel"}</span>
             <strong className="StudentLinkDialog__link">{manageLink}</strong>
           </div>
           <FilledButton
@@ -299,8 +353,8 @@ export const StudentLinkDialog = ({
             variant="outlined"
             label="Kopiuj link"
             icon={copyIcon}
-            status={copyStatus}
-            onClick={() => copyStudentLink(manageLink)}
+            status={copiedTarget === "teacher" ? "success" : null}
+            onClick={() => copyStudentLink(manageLink, "teacher")}
           />
         </section>
 
@@ -355,8 +409,8 @@ export const StudentLinkDialog = ({
                       variant="outlined"
                       label="Kopiuj link"
                       icon={copyIcon}
-                      status={copyStatus}
-                      onClick={() => copyStudentLink(link.url)}
+                      status={copiedTarget === link.permalink ? "success" : null}
+                      onClick={() => copyStudentLink(link.url, link.permalink)}
                     />
                     <FilledButton
                       size="medium"

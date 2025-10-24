@@ -37,6 +37,7 @@ import { getSyncableElements } from ".";
 import type { SyncableExcalidrawElement } from ".";
 import type Portal from "../collab/Portal";
 import type { Socket } from "socket.io-client";
+import { apiClient } from "./api-client";
 
 // private
 // -----------------------------------------------------------------------------
@@ -56,6 +57,11 @@ try {
 const FIREBASE_ENABLED =
   FIREBASE_CONFIG && Object.keys(FIREBASE_CONFIG).length > 0 &&
   (FIREBASE_CONFIG.apiKey || FIREBASE_CONFIG.storageBucket);
+
+const getRoomIdFromPrefix = (prefix: string) => {
+  const segments = prefix.split("/").filter(Boolean);
+  return segments.length ? segments[segments.length - 1] : null;
+};
 
 let firebaseApp: ReturnType<typeof initializeApp> | null = null;
 let firestore: ReturnType<typeof getFirestore> | null = null;
@@ -165,7 +171,11 @@ export const saveFilesToFirebase = async ({
   files: { id: FileId; buffer: Uint8Array }[];
 }) => {
   if (!FIREBASE_ENABLED) {
-    return { savedFiles: [], erroredFiles: files.map((f) => f.id) };
+    const roomId = getRoomIdFromPrefix(prefix);
+    if (!roomId) {
+      return { savedFiles: [], erroredFiles: files.map((f) => f.id) };
+    }
+    return apiClient.uploadFiles(roomId, files);
   }
   const storage = await loadFirebaseStorage();
 
@@ -304,6 +314,62 @@ export const loadFilesFromFirebase = async (
   decryptionKey: string,
   filesIds: readonly FileId[],
 ) => {
+  if (!FIREBASE_ENABLED) {
+    const roomId = getRoomIdFromPrefix(prefix);
+    if (!roomId) {
+      return {
+        loadedFiles: [],
+        erroredFiles: filesIds.reduce((acc, id) => acc.set(id, true), new Map<FileId, true>()),
+      };
+    }
+
+    try {
+      const { files, missing } = await apiClient.fetchFiles(roomId, filesIds);
+
+      const loadedFiles: BinaryFileData[] = [];
+      const erroredFiles = new Map<FileId, true>();
+
+      for (const id of missing) {
+        erroredFiles.set(id, true);
+      }
+
+      for (const file of files) {
+        try {
+          const { data, metadata } = await decompressData<BinaryFileMetadata>(
+            file.buffer,
+            {
+              decryptionKey,
+            },
+          );
+
+          const dataURL = new TextDecoder().decode(data) as DataURL;
+
+          loadedFiles.push({
+            mimeType: metadata.mimeType || MIME_TYPES.binary,
+            id: file.id as FileId,
+            dataURL,
+            created: metadata?.created || Date.now(),
+            lastRetrieved: metadata?.lastRetrieved || Date.now(),
+          });
+        } catch (error) {
+          console.error(error);
+          erroredFiles.set(file.id as FileId, true);
+        }
+      }
+
+      return { loadedFiles, erroredFiles };
+    } catch (error) {
+      console.error(error);
+      return {
+        loadedFiles: [],
+        erroredFiles: filesIds.reduce(
+          (acc, id) => acc.set(id, true),
+          new Map<FileId, true>(),
+        ),
+      };
+    }
+  }
+
   const loadedFiles: BinaryFileData[] = [];
   const erroredFiles = new Map<FileId, true>();
 

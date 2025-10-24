@@ -54,6 +54,18 @@ export const initDb = async () => {
       )
     `);
 
+    // Create room files table for binary attachments (images etc.)
+    await dbRun(`
+      CREATE TABLE IF NOT EXISTS room_files (
+        room_id TEXT NOT NULL,
+        file_id TEXT NOT NULL,
+        data BLOB NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (room_id, file_id)
+      )
+    `);
+
     // Attempt to add missing teacher_id column for existing DBs (ignore error if exists)
     try {
       await dbRun(`ALTER TABLE permalinks ADD COLUMN teacher_id TEXT`);
@@ -86,6 +98,10 @@ export const initDb = async () => {
       CREATE UNIQUE INDEX IF NOT EXISTS idx_permalinks_teacher_student
       ON permalinks(teacher_id, student_name)
       WHERE student_name IS NOT NULL AND teacher_id IS NOT NULL
+    `);
+
+    await dbRun(`
+      CREATE INDEX IF NOT EXISTS idx_room_files_room_id ON room_files(room_id)
     `);
 
     console.log("Database initialized successfully");

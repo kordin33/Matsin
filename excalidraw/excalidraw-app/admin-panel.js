@@ -35,7 +35,10 @@ const renderTeachers = (items) => {
       <td>${teacher.email || ""}</td>
       <td class="token">${teacher.teacher_id}</td>
       <td class="token">${teacher.token}</td>
-      <td><a target="_blank" href="${teacherLink(teacher.teacher_id, teacher.token)}">Otw\u00f3rz panel nauczyciela</a></td>
+      <td>
+        <a target="_blank" href="${teacherLink(teacher.teacher_id, teacher.token)}">Otw\u00f3rz panel nauczyciela</a>
+        <button type="button" class="copy-link" data-link="${teacherLink(teacher.teacher_id, teacher.token)}">Kopiuj link</button>
+      </td>
     `;
     tableBody.appendChild(tr);
   });
@@ -90,5 +93,31 @@ qs("#uploadCsv")?.addEventListener("click", async () => {
     setStatus(`Wgrano ${json.items?.length || 0} nauczycieli`, "success");
   } catch (error) {
     setStatus(error.message, "error");
+  }
+});
+
+tableBody?.addEventListener("click", async (event) => {
+  const target = event.target instanceof HTMLElement ? event.target.closest("button.copy-link") : null;
+  if (!target) {
+    return;
+  }
+  event.preventDefault();
+  const originalLabel = target.dataset.label || "Kopiuj link";
+  const link = target.dataset.link;
+  if (!link) {
+    setStatus("Brak linku do skopiowania", "error");
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(link);
+    target.textContent = "Skopiowano!";
+    target.dataset.label = originalLabel;
+    setStatus("Skopiowano link nauczyciela", "success");
+    window.setTimeout(() => {
+      target.textContent = originalLabel;
+    }, 2000);
+  } catch (error) {
+    console.error("Clipboard error", error);
+    setStatus("Nie uda\u0142o si\u0119 skopiowa\u0107 linku", "error");
   }
 });

@@ -20,8 +20,8 @@ app.use(
 );
 
 // Middleware for handling raw binary data for exportToBackend
-// JSON middleware for routes
-app.use(express.json({ limit: "2mb" }));
+// JSON middleware for routes (allow larger payloads for image uploads)
+app.use(express.json({ limit: "15mb" }));
 
 app.use(router);
 

@@ -103,6 +103,91 @@ router.post(
   },
 );
 
+router.post("/api/rooms/:roomId/files", async (req, res) => {
+  const { roomId } = req.params;
+  const files = Array.isArray(req.body?.files) ? req.body.files : [];
+
+  if (!files.length) {
+    return res.json({ savedFiles: [], erroredFiles: [] });
+  }
+
+  const savedFiles: string[] = [];
+  const erroredFiles: string[] = [];
+
+  try {
+    for (const file of files) {
+      const id = typeof file?.id === "string" ? file.id : null;
+      const data = typeof file?.data === "string" ? file.data : null;
+
+      if (!id || !data) {
+        if (id) {
+          erroredFiles.push(id);
+        }
+        continue;
+      }
+
+      try {
+        const buffer = Buffer.from(data, "base64");
+        await dbRun(
+          `INSERT INTO room_files (room_id, file_id, data, updated_at)
+           VALUES (?, ?, ?, datetime('now'))
+           ON CONFLICT(room_id, file_id) DO UPDATE SET
+             data = excluded.data,
+             updated_at = excluded.updated_at`,
+          [roomId, id, buffer],
+        );
+        savedFiles.push(id);
+      } catch (error) {
+        console.error("Failed to persist file", error);
+        erroredFiles.push(id);
+      }
+    }
+
+    return res.json({ savedFiles, erroredFiles });
+  } catch (error) {
+    console.error("POST /api/rooms/:roomId/files error", error);
+    return res.status(500).json({ error: "internal_error" });
+  }
+});
+
+router.post("/api/rooms/:roomId/files/batch", async (req, res) => {
+  const { roomId } = req.params;
+  const ids = Array.isArray(req.body?.ids)
+    ? req.body.ids
+        .map((value: unknown) =>
+          typeof value === "string" ? value.trim() : "",
+        )
+        .filter(Boolean)
+    : [];
+
+  if (!ids.length) {
+    return res.json({ files: [], missing: [] });
+  }
+
+  try {
+    const placeholders = ids.map(() => "?").join(",");
+    const rows = await dbAll(
+      `SELECT file_id, data FROM room_files WHERE room_id = ? AND file_id IN (${placeholders})`,
+      [roomId, ...ids],
+    );
+
+    const files = rows.map((row: any) => ({
+      id: row.file_id,
+      data: Buffer.isBuffer(row.data)
+        ? row.data.toString("base64")
+        : Buffer.from(row.data).toString("base64"),
+    }));
+
+    const found = new Set(files.map((file) => file.id));
+    const missing = ids.filter((id) => !found.has(id));
+
+    return res.json({ files, missing });
+  } catch (error) {
+    console.error("POST /api/rooms/:roomId/files/batch error", error);
+    return res.status(500).json({ error: "internal_error" });
+  }
+});
+
 // Permalinks
 function generatePermalink(): string {
   return Math.random().toString(36).slice(2, 10);
@@ -195,8 +280,18 @@ router.get("/api/permalinks", async (req, res) => {
   }
   try {
     const rows = await dbAll(
-      `SELECT permalink, room_id, room_key, student_name, created_at, last_accessed, is_active
-       FROM permalinks WHERE teacher_id = ? AND is_active = 1 ORDER BY created_at DESC`,
+      `SELECT p.permalink,
+              p.room_id,
+              p.room_key,
+              p.student_name,
+              p.created_at,
+              p.last_accessed,
+              p.is_active,
+              t.name AS teacher_name
+       FROM permalinks p
+       LEFT JOIN teachers t ON t.teacher_id = p.teacher_id
+       WHERE p.teacher_id = ? AND p.is_active = 1
+       ORDER BY p.created_at DESC`,
       [teacher_id],
     );
     return res.json({ items: rows });
@@ -234,8 +329,18 @@ router.get("/api/teachers/:teacherId/permalinks", async (req, res) => {
     const ok = await assertTeacherToken(teacherId, token);
     if (!ok) return res.status(403).json({ error: "forbidden" });
     const rows = await dbAll(
-      `SELECT permalink, room_id, room_key, student_name, created_at, last_accessed, is_active
-       FROM permalinks WHERE teacher_id = ? AND is_active = 1 ORDER BY created_at DESC`,
+      `SELECT p.permalink,
+              p.room_id,
+              p.room_key,
+              p.student_name,
+              p.created_at,
+              p.last_accessed,
+              p.is_active,
+              t.name AS teacher_name
+       FROM permalinks p
+       LEFT JOIN teachers t ON t.teacher_id = p.teacher_id
+       WHERE p.teacher_id = ? AND p.is_active = 1
+       ORDER BY p.created_at DESC`,
       [teacherId],
     );
     return res.json({ items: rows });

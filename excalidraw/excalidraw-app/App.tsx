@@ -435,6 +435,11 @@ useEffect(() => {
     ) {
       setStudentDialogState({ isOpen: true });
     }
+    const storedTeacherId = localStorage.getItem("matsin:teacherKey");
+    const storedTeacherToken = localStorage.getItem("matsin:teacherToken");
+    if (storedTeacherId && storedTeacherToken) {
+      setStudentDialogState({ isOpen: true });
+    }
   } catch {}
 }, [setStudentDialogState]);
   const [isCollaborating] = useAtomWithInitialValue(isCollaboratingAtom, () => {

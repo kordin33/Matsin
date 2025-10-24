@@ -1,18 +1,52 @@
 ﻿import type { SyncableExcalidrawElement } from "./index";
 
 export const getServerUrl = () => {
-  if (typeof window !== 'undefined') {
+  if (typeof window !== "undefined") {
     return (
       import.meta.env.VITE_APP_WS_SERVER_URL ||
       import.meta.env.VITE_APP_BACKEND_URL ||
-      'https://websocket-production-e339.up.railway.app'
+      "https://websocket-production-e339.up.railway.app"
     );
   }
   return (
     process.env.WS_SERVER_URL ||
     process.env.BACKEND_URL ||
-    'http://localhost'
+    "http://localhost"
   );
+};
+
+const CHUNK_SIZE = 0x8000;
+
+const uint8ToBase64 = (buffer: Uint8Array) => {
+  if (typeof window === "undefined") {
+    const nodeBuffer = (globalThis as any).Buffer;
+    if (nodeBuffer) {
+      return nodeBuffer.from(buffer).toString("base64");
+    }
+  }
+
+  let binary = "";
+  for (let i = 0; i < buffer.length; i += CHUNK_SIZE) {
+    const chunk = buffer.subarray(i, i + CHUNK_SIZE);
+    binary += String.fromCharCode(...Array.from(chunk));
+  }
+  return btoa(binary);
+};
+
+const base64ToUint8 = (value: string) => {
+  if (typeof window === "undefined") {
+    const nodeBuffer = (globalThis as any).Buffer;
+    if (nodeBuffer) {
+      return new Uint8Array(nodeBuffer.from(value, "base64"));
+    }
+  }
+  const binary = atob(value);
+  const length = binary.length;
+  const bytes = new Uint8Array(length);
+  for (let i = 0; i < length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
 };
 
 export interface ApiScene {
@@ -46,6 +80,7 @@ export interface TeacherPermalinkItem {
   room_id: string;
   room_key: string;
   student_name: string | null;
+  teacher_name?: string | null;
   created_at: string;
   last_accessed: string | null;
   is_active: number;
@@ -159,6 +194,53 @@ class ApiClient {
   // Health check
   async healthCheck(): Promise<{ status: string; timestamp: string }> {
     return this.request<{ status: string; timestamp: string }>('/health');
+  }
+
+  async uploadFiles(
+    roomId: string,
+    files: { id: string; buffer: Uint8Array }[],
+  ): Promise<{ savedFiles: string[]; erroredFiles: string[] }> {
+    if (!files.length) {
+      return { savedFiles: [], erroredFiles: [] };
+    }
+
+    return this.request<{ savedFiles: string[]; erroredFiles: string[] }>(
+      `/api/rooms/${encodeURIComponent(roomId)}/files`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          files: files.map((file) => ({
+            id: file.id,
+            data: uint8ToBase64(file.buffer),
+          })),
+        }),
+      },
+    );
+  }
+
+  async fetchFiles(
+    roomId: string,
+    ids: readonly string[],
+  ): Promise<{ files: { id: string; buffer: Uint8Array }[]; missing: string[] }> {
+    if (!ids.length) {
+      return { files: [], missing: [] };
+    }
+
+    const response = await this.request<{
+      files: { id: string; data: string }[];
+      missing: string[];
+    }>(`/api/rooms/${encodeURIComponent(roomId)}/files/batch`, {
+      method: "POST",
+      body: JSON.stringify({ ids }),
+    });
+
+    return {
+      files: (response.files || []).map((file) => ({
+        id: file.id,
+        buffer: base64ToUint8(file.data),
+      })),
+      missing: response.missing || [],
+    };
   }
 }
 

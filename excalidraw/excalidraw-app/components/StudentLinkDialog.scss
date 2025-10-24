@@ -82,6 +82,11 @@
   color: var(--color-text-muted, rgba(17, 17, 17, 0.6));
 }
 
+.StudentLinkDialog__teacherName {
+  font-size: 0.85rem;
+  color: var(--color-text-muted, rgba(17, 17, 17, 0.65));
+}
+
 .StudentLinkDialog__link {
   word-break: break-all;
   font-family: "JetBrains Mono", "Fira Code", monospace;

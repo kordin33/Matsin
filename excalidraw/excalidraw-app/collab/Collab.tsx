@@ -320,20 +320,30 @@ class Collab extends PureComponent<CollabProps, CollabState> {
     syncableElements: readonly SyncableExcalidrawElement[],
   ) => {
     try {
-      // Use REST backend for persistent rooms, Firebase for temporary collaboration
-      const isPersistentRoom = import.meta.env.VITE_APP_PERSISTENT_ROOMS === 'true';
+      const preferServer =
+        import.meta.env.VITE_APP_DISABLE_DATABASE_PERSISTENCE !== "true";
 
-      const storedElements = isPersistentRoom
-        ? await saveToServer(
-            this.portal,
-            syncableElements,
-            this.excalidrawAPI.getAppState(),
-          )
-        : await saveToFirebase(
+      let storedElements: readonly SyncableExcalidrawElement[] | null = null;
+
+      if (preferServer) {
+        try {
+          storedElements = await saveToServer(
             this.portal,
             syncableElements,
             this.excalidrawAPI.getAppState(),
           );
+        } catch (serverError) {
+          console.error("Failed to persist collaboration state on server", serverError);
+        }
+      }
+
+      if (!storedElements) {
+        storedElements = await saveToFirebase(
+          this.portal,
+          syncableElements,
+          this.excalidrawAPI.getAppState(),
+        );
+      }
 
       this.resetErrorIndicator();
 
@@ -731,20 +741,31 @@ class Collab extends PureComponent<CollabProps, CollabState> {
       this.excalidrawAPI.resetScene();
 
       try {
-        // Use REST backend for persistent rooms, Firebase for temporary collaboration
-        const isPersistentRoom = import.meta.env.VITE_APP_PERSISTENT_ROOMS === 'true';
+        const preferServer =
+          import.meta.env.VITE_APP_DISABLE_DATABASE_PERSISTENCE !== "true";
 
-        const elements = isPersistentRoom
-          ? await loadFromServer(
-              roomLinkData.roomId,
-              roomLinkData.roomKey,
-              this.portal.socket,
-            )
-          : await loadFromFirebase(
+        let elements: readonly SyncableExcalidrawElement[] | null = null;
+
+        if (preferServer) {
+          try {
+            elements = await loadFromServer(
               roomLinkData.roomId,
               roomLinkData.roomKey,
               this.portal.socket,
             );
+          } catch (serverError) {
+            console.error("Failed to load scene from server", serverError);
+          }
+        }
+
+        if (!elements) {
+          elements = await loadFromFirebase(
+            roomLinkData.roomId,
+            roomLinkData.roomKey,
+            this.portal.socket,
+          );
+        }
+
         if (elements) {
           this.setLastBroadcastedOrReceivedSceneVersion(
             getSceneVersion(elements),
