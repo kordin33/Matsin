@@ -21,6 +21,17 @@ const laserPointerCursorDataURL_darkMode = `data:${
   `${laserPointerCursorSVG_tag}${laserPointerCursorBackgroundSVG}${laserPointerCursorIconSVG}</svg>`,
 )}`;
 
+const pencilCursorSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><path fill="#f6c86e" stroke="#8e5a2d" stroke-width="1.5" stroke-linejoin="round" d="M6.2 19.8l5.9 5.9L28.5 9.3l-5.9-5.9z"/><path fill="#f4a261" stroke="#8e5a2d" stroke-width="1.2" stroke-linejoin="round" d="M22.6 3.4l5.9 5.9L31 6.8l-5.9-5.9z"/><path fill="#38322e" stroke="#38322e" stroke-width="0.8" stroke-linejoin="round" d="M6.2 19.8L4.6 26.9l6.9-1.6z"/></svg>`;
+
+const pencilCursorDataURL = `data:${
+  MIME_TYPES.svg
+},${encodeURIComponent(pencilCursorSVG)}`;
+
+const PENCIL_CURSOR_HOTSPOT = {
+  x: 6,
+  y: 26,
+};
+
 export const resetCursor = (interactiveCanvas: HTMLCanvasElement | null) => {
   if (interactiveCanvas) {
     interactiveCanvas.style.cursor = "";
@@ -100,6 +111,8 @@ export const setCursorForShape = (
         ? laserPointerCursorDataURL_lightMode
         : laserPointerCursorDataURL_darkMode;
     interactiveCanvas.style.cursor = `url(${url}), auto`;
+  } else if (appState.activeTool.type === "freedraw") {
+    interactiveCanvas.style.cursor = `url(${pencilCursorDataURL}) ${PENCIL_CURSOR_HOTSPOT.x} ${PENCIL_CURSOR_HOTSPOT.y}, auto`;
   } else if (!["image", "custom"].includes(appState.activeTool.type)) {
     interactiveCanvas.style.cursor = CURSOR_TYPE.CROSSHAIR;
   } else if (appState.activeTool.type !== "image") {

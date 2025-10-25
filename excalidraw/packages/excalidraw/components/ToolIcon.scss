@@ -51,13 +51,17 @@
 
     svg {
       position: relative;
-      width: var(--default-icon-size);
-      height: var(--default-icon-size);
+      width: calc(var(--default-icon-size) * 1.05);
+      height: calc(var(--default-icon-size) * 1.05);
       color: var(--icon-fill-color);
-      fill: none; // wymuś konturowe ikony w toolbarze
-      
-      // Zabezpieczenie przed nadpisaniem przez wewnętrzne elementy
-      // (np. <path>, <rect>, <circle>):
+      display: block;
+      fill: none; // enforce outline-only icons in the toolbar
+      stroke: currentColor;
+      stroke-width: 1.65;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+
+      // Prevent inner elements (<path>, <rect>, <circle>, etc.) from overriding outline styling
       & * {
         fill: none !important;
       }

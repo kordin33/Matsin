@@ -609,6 +609,9 @@ class App extends React.Component<AppProps, AppState> {
     null;
   lastPointerMoveEvent: PointerEvent | null = null;
   lastPointerMoveCoords: { x: number; y: number } | null = null;
+  private lineShortcutState:
+    | { pointerId: number; previousTool: AppState["activeTool"] }
+    | null = null;
   lastViewportPosition = { x: 0, y: 0 };
 
   animationFrameHandler = new AnimationFrameHandler();
@@ -6483,8 +6486,46 @@ class App extends React.Component<AppProps, AppState> {
     });
     this.savePointer(event.clientX, event.clientY, "down");
 
+    const isLineShortcut =
+      event.button === POINTER_BUTTON.SECONDARY &&
+      event.shiftKey &&
+      !this.state.viewModeEnabled;
+
+    if (isLineShortcut) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (
+        !this.lineShortcutState ||
+        this.lineShortcutState.pointerId !== event.pointerId
+      ) {
+        this.lineShortcutState = {
+          pointerId: event.pointerId,
+          previousTool: { ...this.state.activeTool },
+        };
+      }
+
+      if (this.state.activeTool.type !== TOOL_TYPE.line) {
+        this.setState(
+          {
+            activeTool: updateActiveTool(this.state, {
+              type: TOOL_TYPE.line,
+            }),
+          },
+          () => {
+            this.handleCanvasPointerDown(event);
+          },
+        );
+        return;
+      }
+    }
+
+    const effectiveButton = isLineShortcut
+      ? POINTER_BUTTON.MAIN
+      : event.button;
+
     if (
-      event.button === POINTER_BUTTON.ERASER &&
+      effectiveButton === POINTER_BUTTON.ERASER &&
       this.state.activeTool.type !== TOOL_TYPE.eraser
     ) {
       this.setState(
@@ -6534,9 +6575,9 @@ class App extends React.Component<AppProps, AppState> {
 
     // only handle left mouse button or touch
     if (
-      event.button !== POINTER_BUTTON.MAIN &&
-      event.button !== POINTER_BUTTON.TOUCH &&
-      event.button !== POINTER_BUTTON.ERASER
+      effectiveButton !== POINTER_BUTTON.MAIN &&
+      effectiveButton !== POINTER_BUTTON.TOUCH &&
+      effectiveButton !== POINTER_BUTTON.ERASER
     ) {
       return;
     }
@@ -6643,8 +6684,13 @@ class App extends React.Component<AppProps, AppState> {
     const onPointerMove =
       this.onPointerMoveFromPointerDownHandler(pointerDownState);
 
-    const onPointerUp =
+    const handlePointerUp =
       this.onPointerUpFromPointerDownHandler(pointerDownState);
+
+    const onPointerUp = (pointerEvent: PointerEvent) => {
+      handlePointerUp(pointerEvent);
+      this.restoreActiveToolFromLineShortcut(pointerEvent.pointerId);
+    };
 
     const onKeyDown = this.onKeyDownFromPointerDownHandler(pointerDownState);
     const onKeyUp = this.onKeyUpFromPointerDownHandler(pointerDownState);
@@ -6663,6 +6709,25 @@ class App extends React.Component<AppProps, AppState> {
       pointerDownState.eventListeners.onKeyUp = onKeyUp;
       pointerDownState.eventListeners.onKeyDown = onKeyDown;
     }
+  };
+
+  private restoreActiveToolFromLineShortcut = (pointerId?: number) => {
+    if (
+      !this.lineShortcutState ||
+      (pointerId !== undefined &&
+        this.lineShortcutState.pointerId !== pointerId)
+    ) {
+      return;
+    }
+
+    const nextActiveTool = {
+      ...this.lineShortcutState.previousTool,
+    };
+    this.lineShortcutState = null;
+
+    this.setState({
+      activeTool: nextActiveTool,
+    });
   };
 
   private handleCanvasPointerUp = (
@@ -6735,6 +6800,7 @@ class App extends React.Component<AppProps, AppState> {
         selectedElementIds: {},
       });
     }
+    this.restoreActiveToolFromLineShortcut(event.pointerId);
   };
 
   private maybeOpenContextMenuAfterPointerDownOnTouchDevices = (

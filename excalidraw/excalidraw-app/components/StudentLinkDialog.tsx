@@ -17,6 +17,7 @@ const STUDENT_LINKS_KEY = "matsin:studentLinks";
 const TEACHER_KEY = "matsin:teacherKey";
 const TEACHER_TOKEN_KEY = "matsin:teacherToken";
 const TEACHER_NAME_KEY = "matsin:teacherName";
+const TEACHER_DISPLAY_NAME = "Dawid Furmaniuk";
 
 export const studentLinkDialogStateAtom = atom<
   { isOpen: false } | { isOpen: true }
@@ -74,10 +75,15 @@ export const StudentLinkDialog = ({
   const [isCreating, setIsCreating] = useState(false);
   const [teacherName, setTeacherName] = useState<string | null>(() => {
     try {
-      return localStorage.getItem(TEACHER_NAME_KEY);
-    } catch {
-      return null;
-    }
+      const stored = localStorage.getItem(TEACHER_NAME_KEY);
+      if (stored === TEACHER_DISPLAY_NAME) {
+        return TEACHER_DISPLAY_NAME;
+      }
+      if (stored) {
+        localStorage.setItem(TEACHER_NAME_KEY, TEACHER_DISPLAY_NAME);
+      }
+    } catch {}
+    return TEACHER_DISPLAY_NAME;
   });
   const [teacherId] = useState<string>(() => {
     try {
@@ -162,10 +168,10 @@ export const StudentLinkDialog = ({
               typeof item.teacher_name === "string" &&
               item.teacher_name.trim().length > 0,
           )?.teacher_name?.trim() || null;
-        if (remoteTeacherName && remoteTeacherName !== teacherName) {
-          setTeacherName(remoteTeacherName);
+        if (remoteTeacherName && remoteTeacherName !== TEACHER_DISPLAY_NAME) {
+          setTeacherName(TEACHER_DISPLAY_NAME);
           try {
-            localStorage.setItem(TEACHER_NAME_KEY, remoteTeacherName);
+            localStorage.setItem(TEACHER_NAME_KEY, TEACHER_DISPLAY_NAME);
           } catch {}
         }
 
@@ -181,12 +187,12 @@ export const StudentLinkDialog = ({
   }, [teacherId, teacherToken]);
 
   useEffect(() => {
-    if (!teacherToken || teacherName) {
+    if (!teacherToken || teacherName === TEACHER_DISPLAY_NAME) {
       return;
     }
-    setTeacherName("Nauczyciel");
+    setTeacherName(TEACHER_DISPLAY_NAME);
     try {
-      localStorage.setItem(TEACHER_NAME_KEY, "Nauczyciel");
+      localStorage.setItem(TEACHER_NAME_KEY, TEACHER_DISPLAY_NAME);
     } catch {}
   }, [teacherToken, teacherName]);
 
@@ -194,9 +200,7 @@ export const StudentLinkDialog = ({
     if (!collabAPI || !teacherToken) {
       return;
     }
-    const displayName =
-      (teacherName && teacherName.trim().length > 0 ? teacherName.trim() : "Nauczyciel") || "Nauczyciel";
-    collabAPI.setUsername(displayName);
+    collabAPI.setUsername(TEACHER_DISPLAY_NAME);
   }, [collabAPI, teacherToken, teacherName]);
 
   const createStudentLink = async () => {
@@ -348,7 +352,7 @@ export const StudentLinkDialog = ({
         <section className="StudentLinkDialog__card StudentLinkDialog__teacher">
           <div className="StudentLinkDialog__cardBody">
             <span className="StudentLinkDialog__label">Link nauczyciela</span>
-            <span className="StudentLinkDialog__teacherName">{teacherName || "Nauczyciel"}</span>
+            <span className="StudentLinkDialog__teacherName">{TEACHER_DISPLAY_NAME}</span>
             <strong className="StudentLinkDialog__link">{manageLink}</strong>
           </div>
           <FilledButton

@@ -37,17 +37,17 @@
   --button-active-border: var(--color-brand-active);
   --default-border-color: var(--color-surface-high);
 
-  --default-button-size: 2rem;
-  --default-icon-size: 1rem;
-  --lg-button-size: 2.25rem;
-  --lg-icon-size: 1rem;
+  --default-button-size: 2.3rem;
+  --default-icon-size: 1.2rem;
+  --lg-button-size: 2.6rem;
+  --lg-icon-size: 1.3rem;
   --editor-container-padding: 1rem;
 
   @media screen and (min-device-width: 1921px) {
-    --lg-button-size: 2.5rem;
-    --lg-icon-size: 1.25rem;
-    --default-button-size: 2.25rem;
-    --default-icon-size: 1.25rem;
+    --lg-button-size: 2.85rem;
+    --lg-icon-size: 1.45rem;
+    --default-button-size: 2.55rem;
+    --default-icon-size: 1.35rem;
   }
 
   --scrollbar-thumb: var(--button-gray-2);
