@@ -1049,10 +1049,10 @@ export function getFreeDrawSvgPath(element: ExcalidrawFreeDrawElement) {
   // Consider changing the options for simulated pressure vs real pressure
   const options: StrokeOptions = {
     simulatePressure: element.simulatePressure,
-    size: element.strokeWidth * 2.25,
-    thinning: 0.5,
-    smoothing: 0.5,
-    streamline: 0.5,
+    size: element.strokeWidth * (element.simulatePressure ? 2.25 : 3.0), // Larger size for real pressure
+    thinning: element.simulatePressure ? 0.5 : 0.3, // Less thinning for real pressure for better tablet experience
+    smoothing: element.simulatePressure ? 0.5 : 0.6, // More smoothing for real pressure
+    streamline: element.simulatePressure ? 0.5 : 0.4, // Less streamline for more responsive tablet drawing
     easing: (t) => Math.sin((t * Math.PI) / 2), // https://easings.net/#easeOutSine
     last: !!element.lastCommittedPoint, // LastCommittedPoint is added on pointerup
   };

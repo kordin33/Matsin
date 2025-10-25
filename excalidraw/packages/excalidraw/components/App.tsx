@@ -6403,10 +6403,12 @@ class App extends React.Component<AppProps, AppState> {
     // discard the freedraw element if it is very short because it is likely
     // just a spike, otherwise finalize the freedraw element when the second
     // finger is lifted
+    // Skip this logic if penMode is active (for graphics tablets)
     if (
       event.pointerType === "touch" &&
       this.state.newElement &&
-      this.state.newElement.type === "freedraw"
+      this.state.newElement.type === "freedraw" &&
+      !this.state.penMode // Don't interrupt drawing in pen mode
     ) {
       const element = this.state.newElement as ExcalidrawFreeDrawElement;
       this.updateScene({
@@ -6451,7 +6453,20 @@ class App extends React.Component<AppProps, AppState> {
 
     //fires only once, if pen is detected, penMode is enabled
     //the user can disable this by toggling the penMode button
-    if (!this.state.penDetected && event.pointerType === "pen") {
+    // Enhanced detection for graphics tablets and stylus devices
+    const isPenOrTablet = 
+      event.pointerType === "pen" || 
+      // Detect graphics tablets by pressure sensitivity (not default 0.5)
+      (event.pressure > 0 && event.pressure !== 0.5) ||
+      // Detect stylus by tilt properties
+      (event.tiltX !== undefined && event.tiltY !== undefined && 
+       (Math.abs(event.tiltX) > 0 || Math.abs(event.tiltY) > 0)) ||
+      // Detect by twist property (some styluses support rotation)
+      (event.twist !== undefined && event.twist > 0) ||
+      // Detect by tangential pressure (barrel button pressure)
+      (event.tangentialPressure !== undefined && event.tangentialPressure > 0);
+
+    if (!this.state.penDetected && isPenOrTablet) {
       this.setState((prevState) => {
         return {
           penMode: true,
