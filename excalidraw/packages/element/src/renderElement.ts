@@ -1050,9 +1050,9 @@ export function getFreeDrawSvgPath(element: ExcalidrawFreeDrawElement) {
   const options: StrokeOptions = {
     simulatePressure: element.simulatePressure,
     size: element.strokeWidth * 2.25,
-    thinning: 0,
-    smoothing: 0.9,
-    streamline: 0.9,
+    thinning: 0.5,
+    smoothing: 0.5,
+    streamline: 0.5,
     easing: (t) => Math.sin((t * Math.PI) / 2), // https://easings.net/#easeOutSine
     last: !!element.lastCommittedPoint, // LastCommittedPoint is added on pointerup
   };

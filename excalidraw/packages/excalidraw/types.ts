@@ -731,7 +731,6 @@ export type AppClassProperties = {
 
   onPointerUpEmitter: App["onPointerUpEmitter"];
   updateEditorAtom: App["updateEditorAtom"];
-  setToast: App["setToast"];
 };
 
 export type PointerDownState = Readonly<{
