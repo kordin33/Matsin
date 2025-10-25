@@ -10,7 +10,7 @@ RUN npm_config_target_arch=${TARGETARCH} yarn --network-timeout 600000
 
 ARG NODE_ENV=production
 
-RUN npm_config_target_arch=${TARGETARCH} yarn build:app:docker
+RUN yarn build:app:docker
 
 FROM --platform=${TARGETPLATFORM} nginx:1.27-alpine
 
